@@ -1,5 +1,18 @@
 # Fruit detection
 
+# Requisites
+
+- [Docker](https://docs.docker.com/engine/install/ubuntu/)
+- Ubuntu 20.04 / 22.04
+- NVidia GPU GeForce RTX 3070 or higher.
+- [NVidia GPU Driver](https://www.nvidia.com/en-us/drivers/unix/)
+- [NVidia Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit)
+
+We recommend reading this [article](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_container.html) from NVidia Omniverse which explains the basic configuration.
+
+> **NOTE:** this project is disk savvy, make sure to have tens of GBs (~50GB) available of free disk space.
+
+
 # Using the different docker components
 
 ## Architecture
@@ -14,10 +27,14 @@ The available profiles are:
 - `detection`: loads the detection stack.
 - `visualization`: loads RQt to visualize the input and output image processing.
 - `test_camera`: loads the usb_cam driver that makes a connected webcam to publish. Useful when the Olive Camera is not available.
+- `simulation`: loads the simulation NVidia Isaac Omniverse. 
+> TBD
 
 Compound profiles are:
 
-- `test_real_pipeline`: loads `test_camera`,`visualization` and `detection`.     
+- `test_real_pipeline`: loads `test_camera`,`visualization` and `detection`.
+- `simulated_pipeline`: loads `simulation`,`visualization` and `detection`.
+
 > TBD
 
 Testing profiles are:
@@ -55,3 +72,9 @@ docker compose -f docker/docker-compose.yml --profile test_real_pipeline down
 ```bash
 docker compose -f docker/docker-compose.yml --profile detection_test build
 ```
+
+# FAQs
+
+1. How do I clean up all the docker resources?
+
+Your good old friend `docker system prune` and the more agressive `docker system prune --all`. **Caution:** it will likely erase stuff you didn't want to erase as it is a blanket prune. Read the documentation for more information.
