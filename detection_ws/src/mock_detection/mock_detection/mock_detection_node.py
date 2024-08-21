@@ -1,6 +1,13 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+from vision_msgs.msg import (
+    BoundingBox2D,
+    Detection2D,
+    Detection2DArray,
+    ObjectHypothesis,
+    ObjectHypothesisWithPose,
+)
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
@@ -24,6 +31,7 @@ class MockDetectionNode(Node):
 
         self.image_subscription = self.create_subscription(Image, "/image_raw", self.image_callback, MockDetectionNode.TOPIC_QOS_QUEUE_LENGTH)
         self.image_publisher = self.create_publisher(Image, '/proc_image', MockDetectionNode.TOPIC_QOS_QUEUE_LENGTH)
+        self.detections_publisher = self.create_publisher(Detection2DArray, '/detections', MockDetectionNode.TOPIC_QOS_QUEUE_LENGTH)
         self.cv_bridge = CvBridge()
         self.classifier = cv2.CascadeClassifier(MockDetectionNode.CLASSIFIER_CONFIG)
    
@@ -39,6 +47,7 @@ class MockDetectionNode(Node):
         cv_frame = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding=MockDetectionNode.TARGET_ENCODING)
         detections = self.compute_detections(cv_frame)
         self.draw_rects(cv_frame, detections, MockDetectionNode.RECT_COLOR)
+        detections_msg = self.rects_to_ros2_detections(detections, msg_header)
 
         self.image_publisher.publish(
             self.cv_bridge.cv2_to_imgmsg(
@@ -47,6 +56,7 @@ class MockDetectionNode(Node):
                 header=msg_header
             )
         )
+        self.detections_publisher.publish(detections_msg)
 
     def compute_detections(self, cv_img):
         """Computes face detections.
@@ -80,6 +90,47 @@ class MockDetectionNode(Node):
         """
         for x1, y1, x2, y2 in rects:
             cv2.rectangle(cv_img, (x1, y1), (x2, y2), color, 2)
+    
+    def rects_to_ros2_detections(self, rects, header):
+        """Creates a detection result as if there where multiple classes.
+
+        Notes: there are multiple values hardcoded. It is expected to evolve the method into
+        something that relates to the actual classes in the future. Also, the score in the
+        hyphotesis.
+        Provided that there is no pose estimation, only the bounding box is given.
+
+        Args:
+        -----
+            rects (list[tuple[int, int, int, int]]): The list of detections to include.
+            header (Header): The header stamp of the message to return.
+        
+        Returns:
+        --------
+            Detection2DArray: The detection array with the mulitple detections when found.
+        """
+        result = Detection2DArray()
+        result.header = header
+        result.detections = []
+        for x1, y1, x2, y2 in rects:
+            detection_2d = Detection2D()
+            detection_2d.header = header
+            bbox = BoundingBox2D()
+            bbox.size_x = float(x2 - x1)
+            bbox.size_y = float(y2 - y1)
+            bbox.center.theta = 0.
+            bbox.center.position.y = (y2 - y1) / 2
+            bbox.center.position.y = (y2 - y1) / 2
+            detection_2d.bbox = bbox
+            detection_2d.id = "face"
+            object_hypothesis_with_pose = ObjectHypothesisWithPose()
+            object_hypothesis = ObjectHypothesis()
+            object_hypothesis.class_id = "face"
+            object_hypothesis.score = 0.8
+            object_hypothesis_with_pose.hypothesis = object_hypothesis
+            detection_2d.results.append(object_hypothesis_with_pose)
+            result.detections.append(detection_2d)
+        return result
+
 
 
 def main(args=None) -> None:
