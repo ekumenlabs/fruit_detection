@@ -1,0 +1,121 @@
+services:
+  detection:
+    build:
+      context: ..
+      dockerfile: docker/detection.dockerfile
+      target: detection_prod
+    container_name: detection
+    profiles: ["detection", "test_real_pipeline", "simulated_pipeline"]
+    ipc: host
+    network_mode: host
+    stdin_open: true
+    entrypoint: ["/root/detection_ws/entrypoint.sh"]
+    environment:
+      - ROS_DOMAIN_ID=0
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    volumes:
+      - /dev/shm:/dev/shm
+    devices:
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+  detection_test:
+    build:
+      context: ..
+      dockerfile: docker/detection.dockerfile
+      target: detection_test
+    container_name: detection_test
+    profiles: ["detection_test"]
+    ipc: host
+    network_mode: host
+    stdin_open: true
+  visualization:
+    build:
+      context: ..
+      dockerfile: docker/visualization.dockerfile
+    container_name: visualization
+    profiles: ["visualization", "test_real_pipeline", "simulated_pipeline"]
+    ipc: host
+    network_mode: host
+    entrypoint: ["/root/visualization_ws/entrypoint.sh"]
+    environment:
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.docker.xauth
+      - ROS_DOMAIN_ID=0
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    volumes:
+      - /dev/shm:/dev/shm
+      - ../visualization_ws:/root/visualization_ws
+    devices:
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+  test_camera:
+    build:
+      context: ..
+      dockerfile: docker/camera.dockerfile
+    container_name: test_camera
+    profiles: ["test_camera", "test_real_pipeline"]
+    stdin_open: true
+    stop_grace_period: 1s
+    privileged: true
+    ipc: host
+    network_mode: host
+    environment:
+      - ROS_DOMAIN_ID=0
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    volumes:
+      - /dev:/dev
+    devices:
+      - /dev/dri:/dev/dri
+  simulation:
+    build:
+      context: ..
+      dockerfile: docker/isaac.dockerfile
+    container_name: simulation
+    profiles: ["simulation", "simulated_pipeline"]
+    ipc: host
+    network_mode: host
+    entrypoint: ["/root/isaac_ws/entrypoint.sh"]
+    stop_grace_period: 1s
+    environment:
+      - ACCEPT_EULA=YES
+      - PRIVACY_CONSENT=YES
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.docker.xauth
+      - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/isaac-sim/exts/omni.isaac.ros2_bridge/humble/lib
+      - ROS_DISTRO=humble
+      - ROS_DOMAIN_ID=0
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    volumes:
+      - isaac_cache:/root/.isaac-sim-cache:rw
+      - isaac_logs:/root/.nvidia-omniverse/logs:rw
+      - /dev/shm:/dev/shm
+    devices:
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+
+volumes:
+  isaac_cache:
+  isaac_logs:
