@@ -132,7 +132,6 @@ class MockDetectionNode(Node):
         return result
 
 
-
 def main(args=None) -> None:
     """Main function."""
     rclpy.init(args=args)
