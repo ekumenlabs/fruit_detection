@@ -12,6 +12,7 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + PACKAGE_NAME]),
         ("share/" + PACKAGE_NAME, ["package.xml"]),
+        (os.path.join("share", PACKAGE_NAME, "config"), glob(os.path.join("config", "*"))),
         (os.path.join("share", PACKAGE_NAME, "launch"), glob(os.path.join("launch", "*launch.py"))),
     ],
     install_requires=["setuptools"],
