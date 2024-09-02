@@ -102,6 +102,7 @@ services:
       - ROS_DOMAIN_ID=0
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
     volumes:
+      - ../isaac_ws:/root/isaac_ws:rw
       - isaac_cache:/root/.isaac-sim-cache:rw
       - isaac_logs:/root/.nvidia-omniverse/logs:rw
       - /dev/shm:/dev/shm

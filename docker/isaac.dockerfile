@@ -18,6 +18,4 @@ RUN apt update -y && \
 
 WORKDIR /root/isaac_ws
 
-COPY --link isaac_ws/ /root/isaac_ws
-
 CMD [ "/usr/bin/bash" ]
