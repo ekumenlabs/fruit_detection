@@ -29,8 +29,8 @@ SEMANTIC_OBJECTS={
     },
 }
 OBJECTS_POSE_CONFIG={
-    "min_pos": (-0.7, -0.7, 0.5),
-    "max_pos": (0.7, 0.7, 0.5),
+    "min_pos": (-2., -2., 0.5),
+    "max_pos": (2., 2., 0.5),
     "min_rot": (-180., -90., -180.),
     "max_rot": (180., 90, 180.),
 }
