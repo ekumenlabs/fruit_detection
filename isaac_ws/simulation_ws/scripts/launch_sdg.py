@@ -34,20 +34,21 @@ OBJECTS_POSE_CONFIG={
     "min_rot": (-180., -90., -180.),
     "max_rot": (180., 90, 180.),
 }
+OBJECTS_SCALE=(0.1, 0.1, 0.1)
 LIGHT_CONFIG={
     "min_color": (0.5, 0.5, 0.5),
     "max_color": (0.9, 0.9, 0.9),
     "min_intensity": 500,
-    "max_intensity": 2000,
-    "min_pos": (-1., -1., 1.),
-    "max_pos": (1., 1., 5.),
+    "max_intensity": 1000,
+    "min_pos": (-3., -3., 10.),
+    "max_pos": (3., 3., 20.),
 }
 SDG_CAMERA={
     "width": 640,
     "height": 480,
     "name": "sdg_camera",
-    "pos": (0., 0., 0.5),
-    "rot": (0., 0., 0.),
+    "pos": (0., 0., 5.),
+    "rot": (0., -90., 0.),
     "focal_length": 2.1,
     "focus_distance": 5.5,
     "f_stop": 200,
@@ -61,9 +62,8 @@ WRITER_CONFG={
     "output_dir": f"/root/isaac_ws/datasets/{stamp_str}_out_fruit_sdg",
     "rgb": True,
     "bounding_box_2d_tight": True,
-    "semantic_segmentation": True,
 }
-NUM_FRAMES=100
+NUM_FRAMES=300
 
 simulation_app = SimulationApp(launch_config=SIMULATION_APP_CONFIG)
 
@@ -77,6 +77,7 @@ from omni.isaac.core.utils import prims
 from omni.isaac.core.utils.semantics import remove_all_semantics
 from omni.isaac.core.utils.stage import get_current_stage, create_new_stage
 from omni.isaac.nucleus import get_assets_root_path
+import pxr
 
 # Get server path
 assets_root_path = get_assets_root_path()
@@ -106,7 +107,7 @@ apple_prim = prims.create_prim(
     prim_path=SEMANTIC_OBJECTS["Apple"]["prim"],
     position=(-0.1, -0.05, 0.5),
     orientation=(1., 0., 0., 0.),
-    scale=(0.1, 0.1, 0.1),
+    scale=OBJECTS_SCALE,
     usd_path=SEMANTIC_OBJECTS["Apple"]["url"],
     semantic_label=SEMANTIC_OBJECTS["Apple"]["class"],
 )
@@ -116,7 +117,7 @@ avocado_prim = prims.create_prim(
     prim_path=SEMANTIC_OBJECTS["Avocado"]["prim"],
     position=(0, 0.1, 0.5),
     orientation=(1., 0., 0., 0.),
-    scale=(0.1, 0.1, 0.1),
+    scale=OBJECTS_SCALE,
     usd_path=SEMANTIC_OBJECTS["Avocado"]["url"],
     semantic_label=SEMANTIC_OBJECTS["Avocado"]["class"],
 )
@@ -126,7 +127,7 @@ lime_prim = prims.create_prim(
     prim_path=SEMANTIC_OBJECTS["Lime"]["prim"],
     position=(0.1, -0.05, 0.5),
     orientation=(1., 0., 0., 0.),
-    scale=(0.1, 0.1, 0.1),
+    scale=OBJECTS_SCALE,
     usd_path=SEMANTIC_OBJECTS["Lime"]["url"],
     semantic_label=SEMANTIC_OBJECTS["Lime"]["class"],
 )
@@ -169,7 +170,7 @@ def register_lights_placement():
         lights = rep.create.light(
             light_type="distant",
             color=rep.distribution.uniform(LIGHT_CONFIG["min_color"], LIGHT_CONFIG["max_color"]),
-            intensity=rep.distribution.uniform(LIGHT_CONFIG["max_intensity"], LIGHT_CONFIG["max_intensity"]),
+            intensity=rep.distribution.uniform(LIGHT_CONFIG["min_intensity"], LIGHT_CONFIG["max_intensity"]),
             position=rep.distribution.uniform(LIGHT_CONFIG["min_pos"], LIGHT_CONFIG["max_pos"]),
             scale=1.,
             count=3,
