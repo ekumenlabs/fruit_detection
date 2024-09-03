@@ -28,6 +28,7 @@ The available profiles are:
 - `visualization`: loads RQt to visualize the input and output image processing.
 - `test_camera`: loads the usb_cam driver that makes a connected webcam to publish. Useful when the Olive Camera is not available.
 - `simulation`: loads the simulation NVidia Isaac Omniverse. 
+- `dataset_gen`: generates a training dataset using NVidia Isaac Omniverse. 
 > TBD
 
 Compound profiles are:
@@ -72,6 +73,21 @@ docker compose -f docker/docker-compose.yml --profile test_real_pipeline down
 ```bash
 docker compose -f docker/docker-compose.yml --profile detection_test build
 ```
+
+## Dataset generation
+
+It generates a dataset with 100 annotated pictures where the lighting conditions and the fruit pose is randomized.
+To generate a new dataset:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile dataset_gen up
+```
+
+![Dataset gen](./doc/dataset_gen.gif)
+
+
+And once it finishes (note the scene does not evolve anymore) check the generated folder under `isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg` where `YYYYMMDDHHMMSS` is the stamp of the dataset creation. 
+
 
 # FAQs
 

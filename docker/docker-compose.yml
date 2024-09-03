@@ -101,6 +101,7 @@ services:
       - ROS_DISTRO=humble
       - ROS_DOMAIN_ID=0
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - MODE=SIM
     volumes:
       - ../isaac_ws:/root/isaac_ws:rw
       - isaac_cache:/root/.isaac-sim-cache:rw
@@ -116,7 +117,42 @@ services:
               count: 1
               capabilities:
                 - gpu
-
+  dataset_gen:
+    build:
+      context: ..
+      dockerfile: docker/isaac.dockerfile
+    container_name: dataset_gen
+    profiles: ["dataset_gen"]
+    ipc: host
+    network_mode: host
+    entrypoint: ["/root/isaac_ws/entrypoint.sh"]
+    stop_grace_period: 1s
+    environment:
+      - ACCEPT_EULA=YES
+      - PRIVACY_CONSENT=YES
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.docker.xauth
+      - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/isaac-sim/exts/omni.isaac.ros2_bridge/humble/lib
+      - ROS_DISTRO=humble
+      - ROS_DOMAIN_ID=0
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - MODE=SDG
+    volumes:
+      - ../isaac_ws:/root/isaac_ws:rw
+      - isaac_cache:/root/.isaac-sim-cache:rw
+      - isaac_logs:/root/.nvidia-omniverse/logs:rw
+      - /dev/shm:/dev/shm
+    devices:
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
 volumes:
   isaac_cache:
   isaac_logs:
