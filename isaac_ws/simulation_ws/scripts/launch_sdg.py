@@ -58,7 +58,7 @@ SDG_CAMERA={
 }
 stamp_str = datetime.now().strftime("%Y%m%d%H%M%S")
 WRITER_CONFG={
-    "output_dir": f"{stamp_str}_out_fruit_sdg",
+    "output_dir": f"/root/isaac_ws/datasets/{stamp_str}_out_fruit_sdg",
     "rgb": True,
     "bounding_box_2d_tight": True,
     "semantic_segmentation": True,
