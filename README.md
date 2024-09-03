@@ -83,6 +83,9 @@ To generate a new dataset:
 docker compose -f docker/docker-compose.yml --profile dataset_gen up
 ```
 
+![Dataset gen](./doc/dataset_gen.gif)
+
+
 And once it finishes (note the scene does not evolve anymore) check the generated folder under `isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg` where `YYYYMMDDHHMMSS` is the stamp of the dataset creation. 
 
 
