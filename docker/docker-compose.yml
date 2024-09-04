@@ -1,4 +1,42 @@
 services:
+  training:
+    build:
+      context: ..
+      dockerfile: docker/training.dockerfile
+      target: training_prod
+    container_name: training
+    profiles: ["training"]
+    entrypoint: ["python3", "train.py", "-d", "./data", "-o", "./out/model.pth", "-e", "${EPOCHS}"]
+    volumes:
+      - ${DATASET_PATH}:/root/training_ws/data
+      - ${OUTPUT_PATH}:/root/training_ws/out
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+  training_test:
+    build:
+      context: ..
+      dockerfile: docker/training.dockerfile
+      target: training_prod
+    container_name: training_test
+    profiles: ["training_test"]
+    entrypoint: ["python3", "eval.py", "-m", "./out/model.pth", "-d", "./data", "-o", "./out"]
+    volumes:
+      - ${DATASET_PATH}:/root/training_ws/data
+      - ${OUTPUT_PATH}:/root/training_ws/out
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
   detection:
     build:
       context: ..
