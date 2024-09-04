@@ -77,6 +77,12 @@ docker compose -f docker/docker-compose.yml --profile detection_test build
 ## Dataset generation
 
 It generates a dataset with 100 annotated pictures where the lighting conditions and the fruit pose is randomized.
+
+### Dataset prerequisites
+
+- Omniverse Launcher: Follow the installation guide in this [omniverse-launcher](https://www.nvidia.com/en-us/omniverse/download/) link.
+- Omniverse Nucleus server: Follow the installation guide in this [nucleus](https://docs.omniverse.nvidia.com/nucleus/latest/workstation/installation.html) link.
+
 To generate a new dataset:
 
 ```bash
