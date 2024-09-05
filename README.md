@@ -54,10 +54,9 @@ docker compose -f docker/docker-compose.yml --profile "*" build
 
 ## Training
 
-To train a model you need a NVidia Omniverse synthetic dataset. You first need to set up the following environment variables:
+To train a model you need a NVidia Omniverse synthetic dataset. You first need to set up the following environment variable:
 ```
 export DATASET_PATH=PATH/TO/TRAINING/DATA
-export EPOCHS=5
 ```
 
 Then you can run the training using the training profile:
