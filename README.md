@@ -56,9 +56,8 @@ docker compose -f docker/docker-compose.yml --profile "*" build
 
 To train a model you need a NVidia Omniverse synthetic dataset. You first need to set up the following environment variables:
 ```
-DATASET_PATH=PATH/TO/TRAINING/DATA
-OUTPUT_PATH=OUTPUT/PATH
-EPOCHS=5
+export DATASET_PATH=PATH/TO/TRAINING/DATA
+export EPOCHS=5
 ```
 
 Then you can run the training using the training profile:
@@ -67,13 +66,13 @@ Then you can run the training using the training profile:
 docker compose -f docker/docker-compose.yml --profile training up
 ```
 
-After the training ends, a `model.pth` file will be available inside OUTPUT_PATH. Additionally, you will notice that the dataset files were organized in different folders based on their extension. To test the model you can run:
+After the training ends, a `model.pth` file will be available inside `fruit_detection/model`. Additionally, you will notice that the dataset files were organized in different folders based on their extension. To test the model you can run:
 
 ```bash
 docker compose -f docker/docker-compose.yml --profile training_test up
 ```
 
-This will evaluate every image in the DATASET_PATH and generate annotated images in the OUTPUT_PATH.
+This will evaluate every image in the `DATASET_PATH` and generate annotated images in the `model` folder.
 
 ## Run
 

@@ -1,13 +1,15 @@
 FROM ubuntu:22.04 AS training_prod
 
-COPY training_ws /root/training_ws/
-
 WORKDIR /root/training_ws/
-RUN mkdir data
-RUN mkdir out
+RUN mkdir data model model/out
 
-RUN apt-get update
-RUN apt-get install -y python3.10 python3-pip
+RUN apt-get update && \
+    apt-get install -y python3.10 python3-pip
+
+COPY --link training_ws/requirements.txt /root/training_ws/
+
 RUN python3 -m pip install -r requirements.txt
+
+COPY --link training_ws/train.py training_ws/eval.py /root/training_ws/
 
 ENTRYPOINT [ "/usr/bin/bash" ]

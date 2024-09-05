@@ -1,3 +1,11 @@
+# Permalink to original code: https://github.com/NVIDIA-Omniverse/synthetic-data-examples/blob/78622588948e055e27aa8b0ef8494a73855bceeb/end-to-end-workflows/object_detection_fruit/training/code/train.py
+# Changes:
+#   - Modified the amount of labels
+#   - Made static_labels part of the dataset class
+#   - Removed the epochs option from the args parser and moved it to a constant
+#   - Moved some training values to constants
+#   - Added some logging
+
 # SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -65,6 +73,13 @@ class FruitDataset(torch.utils.data.Dataset):
         self.imgs = list(sorted(os.listdir(os.path.join(root, "png"))))
         self.label = list(sorted(os.listdir(os.path.join(root, "json"))))
         self.box = list(sorted(os.listdir(os.path.join(root, "npy"))))
+        
+        self.static_labels = {
+            "apple": 0,
+            "avocado": 1,
+            "lime": 2,
+        }
+        self.num_classes = len(self.static_labels)
 
     def __getitem__(self, idx):
         img_path = os.path.join(self.root, "png", self.imgs[idx])
@@ -92,13 +107,6 @@ class FruitDataset(torch.utils.data.Dataset):
             labels += [json_labels.get(str(obj_val)).get("class")]
 
         label_dict = {}
-
-        static_labels = {
-            "apple": 0,
-            "avocado": 1,
-            "lime": 2,
-        }
-
         labels_out = []
 
         for i in range(len(labels)):
@@ -106,7 +114,7 @@ class FruitDataset(torch.utils.data.Dataset):
 
         for i in label_dict:
             fruit = label_dict[i]
-            final_fruit_label = static_labels[fruit]
+            final_fruit_label = self.static_labels[fruit]
             labels_out += [final_fruit_label]
 
         target = {}
@@ -141,12 +149,6 @@ def parse_input():
         dest="output_file",
         help="Save torch model to this file and location (file ending in .pth)",
     )
-    parser.add_option(
-        "-e",
-        "--epochs",
-        dest="epochs",
-        help="Give number of epochs to be used for training",
-    )
     (options, args) = parser.parse_args()
     return options, args
 
@@ -168,35 +170,42 @@ def create_model(num_classes):
     model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
     return model
 
+# Constants
+NUM_EPOCHS = 5
+TRAINING_PARTITION_RATIO = 0.7
+OPTIMIZER_LR = 0.001
 
 def main():
     writer = SummaryWriter()
     options, args = parse_input()
     dataset = FruitDataset(options.data_dir, get_transform(train=True))
-    train_size = int(len(dataset) * 0.7)
-    valid_size = int(len(dataset) * 0.2)
-    test_size = len(dataset) - valid_size - train_size
+    train_size = int(len(dataset) * TRAINING_PARTITION_RATIO)
+    unused_size = len(dataset) - train_size
 
-    train, valid, test = torch.utils.data.random_split(
-        dataset, [train_size, valid_size, test_size]
+    train, unused = torch.utils.data.random_split(
+        dataset, [train_size, unused_size]
     )
     train_loader = torch.utils.data.DataLoader(
-        train, batch_size=16, shuffle=True, num_workers=0, collate_fn=collate_fn
+        train, batch_size=1, shuffle=True, num_workers=0, collate_fn=collate_fn
     )
 
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    device = None
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        print("Cuda is available.")
+    else:
+        device = torch.device("cpu")
+        print("Cuda is not available, training with cpu.")
 
-    num_classes = 3
-    num_epochs = int(options.epochs)
-    model = create_model(num_classes)
+    model = create_model(dataset.num_classes)
     model.to(device)
 
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=0.001)
+    optimizer = torch.optim.SGD(params, lr=OPTIMIZER_LR)
     len_dataloader = len(train_loader)
     
     model.train()
-    for epoch in range(num_epochs):
+    for epoch in range(NUM_EPOCHS):
         optimizer.zero_grad()
 
         i = 0
@@ -215,6 +224,7 @@ def main():
 
     writer.close()
     torch.save(model.state_dict(), options.output_file)
+    print(f'Training ended. Model state dictionary was saved to file {options.output_file}.')
 
 
 if __name__ == "__main__":

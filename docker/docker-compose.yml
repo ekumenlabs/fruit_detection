@@ -6,10 +6,10 @@ services:
       target: training_prod
     container_name: training
     profiles: ["training"]
-    entrypoint: ["python3", "train.py", "-d", "./data", "-o", "./out/model.pth", "-e", "${EPOCHS}"]
+    entrypoint: ["python3", "train.py", "-d", "./data", "-o", "./model/model.pth"]
     volumes:
       - ${DATASET_PATH}:/root/training_ws/data
-      - ${OUTPUT_PATH}:/root/training_ws/out
+      - ../model/:/root/training_ws/model
     deploy:
       resources:
         reservations:
@@ -25,10 +25,10 @@ services:
       target: training_prod
     container_name: training_test
     profiles: ["training_test"]
-    entrypoint: ["python3", "eval.py", "-m", "./out/model.pth", "-d", "./data", "-o", "./out"]
+    entrypoint: ["python3", "eval.py", "-m", "./model/model.pth", "-d", "./data", "-o", "./model"]
     volumes:
       - ${DATASET_PATH}:/root/training_ws/data
-      - ${OUTPUT_PATH}:/root/training_ws/out
+      - ../model/:/root/training_ws/model
     deploy:
       resources:
         reservations:
