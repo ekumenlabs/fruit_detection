@@ -7,6 +7,8 @@
 - NVidia GPU GeForce RTX 3070 or higher.
 - [NVidia GPU Driver](https://www.nvidia.com/en-us/drivers/unix/)
 - [NVidia Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit)
+- [Omniverse-launcher](https://www.nvidia.com/en-us/omniverse/download/)
+- [Nucleus](https://docs.omniverse.nvidia.com/nucleus/latest/workstation/installation.html)
 
 We recommend reading this [article](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_container.html) from NVidia Omniverse which explains the basic configuration.
 
@@ -77,11 +79,6 @@ docker compose -f docker/docker-compose.yml --profile detection_test build
 ## Dataset generation
 
 It generates a dataset with 100 annotated pictures where the lighting conditions and the fruit pose is randomized.
-
-### Dataset prerequisites
-
-- Omniverse Launcher: Follow the installation guide in this [omniverse-launcher](https://www.nvidia.com/en-us/omniverse/download/) link.
-- Omniverse Nucleus server: Follow the installation guide in this [nucleus](https://docs.omniverse.nvidia.com/nucleus/latest/workstation/installation.html) link.
 
 To generate a new dataset:
 
