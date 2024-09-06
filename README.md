@@ -1,3 +1,5 @@
+TODO: not setting the DATASET_PATH environment variable when composing the training profile prevents it from succeding, we need to decide how to solve this issue.
+
 # Fruit detection
 
 # Requisites
@@ -65,7 +67,7 @@ Then you can run the training using the training profile:
 docker compose -f docker/docker-compose.yml --profile training up
 ```
 
-After the training ends, a `model.pth` file will be available inside `fruit_detection/model`. Additionally, you will notice that the dataset files were organized in different folders based on their extension. To test the model you can run:
+After the training ends, a `model.pth` file will be available inside `model`. Additionally, you will notice that the dataset files were organized in different folders based on their extension. To test the model you can run:
 
 ```bash
 docker compose -f docker/docker-compose.yml --profile training_test up

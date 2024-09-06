@@ -10,6 +10,7 @@ services:
     volumes:
       - ${DATASET_PATH}:/root/training_ws/data
       - ../model/:/root/training_ws/model
+      - torch_cache:/root/.cache/torch
     deploy:
       resources:
         reservations:
@@ -194,3 +195,4 @@ services:
 volumes:
   isaac_cache:
   isaac_logs:
+  torch_cache:
