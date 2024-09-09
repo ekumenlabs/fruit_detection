@@ -174,6 +174,8 @@ def create_model(num_classes):
 NUM_EPOCHS = 5
 TRAINING_PARTITION_RATIO = 0.7
 OPTIMIZER_LR = 0.001
+OPTIMIZER_MOMENTUM = 0.9
+OPTIMIZER_WEIGHT_DECAY = 0.0005
 
 def main():
     writer = SummaryWriter()
@@ -201,7 +203,7 @@ def main():
     model.to(device)
 
     params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=OPTIMIZER_LR)
+    optimizer = torch.optim.SGD(params, lr=OPTIMIZER_LR, momentum=OPTIMIZER_MOMENTUM, weight_decay=OPTIMIZER_WEIGHT_DECAY)
     len_dataloader = len(train_loader)
     
     model.train()
