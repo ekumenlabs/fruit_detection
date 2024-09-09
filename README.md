@@ -1,3 +1,5 @@
+TODO: not setting the DATASET_PATH environment variable when composing the training profile prevents it from succeding, we need to decide how to solve this issue.
+
 # Fruit detection
 
 # Requisites
@@ -26,6 +28,7 @@ The system relies on using profiles to select which set of services build and ru
 
 The available profiles are:
 
+- `training`: trains a fasterrcnn_resnet50_fpn model based on a synthetic dataset.
 - `detection`: loads the detection stack.
 - `visualization`: loads RQt to visualize the input and output image processing.
 - `test_camera`: loads the usb_cam driver that makes a connected webcam to publish. Useful when the Olive Camera is not available.
@@ -42,6 +45,7 @@ Compound profiles are:
 
 Testing profiles are:
 
+- `training_test`: runs the tests for the training stack.
 - `detection_test`: runs the tests for the detection stack.
 
 ## Build the images
@@ -51,6 +55,27 @@ To build all the docker images:
 ```bash
 docker compose -f docker/docker-compose.yml --profile "*" build
 ```
+
+## Training
+
+To train a model you need a NVidia Omniverse synthetic dataset. You first need to set up the following environment variable:
+```
+export DATASET_PATH=PATH/TO/TRAINING/DATA
+```
+
+Then you can run the training using the training profile:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile training up
+```
+
+After the training ends, a `model.pth` file will be available inside `model`. Additionally, you will notice that the dataset files were organized in different folders based on their extension. To test the model you can run:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile training_test up
+```
+
+This will evaluate every image in the `DATASET_PATH` and generate annotated images in the `model` folder.
 
 ## Run
 

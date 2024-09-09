@@ -1,4 +1,44 @@
 services:
+  training:
+    build:
+      context: ..
+      dockerfile: docker/training.dockerfile
+      target: training_prod
+    container_name: training
+    profiles: ["training"]
+    entrypoint: ["python3", "train.py", "-d", "./data", "-o", "./model/model.pth"]
+    volumes:
+      - ${DATASET_PATH}:/root/training_ws/data
+      - ../model/:/root/training_ws/model
+      - torch_cache:/root/.cache/torch
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+  training_test:
+    build:
+      context: ..
+      dockerfile: docker/training.dockerfile
+      target: training_prod
+    container_name: training_test
+    profiles: ["training_test"]
+    entrypoint: ["python3", "eval.py", "-m", "./model/model.pth", "-d", "./data", "-o", "./model"]
+    volumes:
+      - ${DATASET_PATH}:/root/training_ws/data
+      - ../model/:/root/training_ws/model
+      - torch_cache:/root/.cache/torch
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
   detection:
     build:
       context: ..
@@ -156,3 +196,4 @@ services:
 volumes:
   isaac_cache:
   isaac_logs:
+  torch_cache:
