@@ -4,14 +4,17 @@ FROM osrf/ros:${ROS_DISTRO}-desktop-full AS detection_prod
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-COPY --link detection_ws /root/detection_ws/
+COPY --link detection_ws/src/detection/package.xml /root/detection_ws/src/detection/package.xml
 
 WORKDIR /root/detection_ws/
 
 RUN apt-get update && \  
+    apt-get install python3-pip -y && \
     rosdep update && \
     rosdep install --from-paths src -y --rosdistro=${ROS_DISTRO} && \
     rm -rf rm -rf /var/lib/apt/lists/*
+
+COPY --link detection_ws /root/detection_ws/
 
 RUN colcon build --event-handlers console_direct+
 

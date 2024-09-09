@@ -10,4 +10,6 @@ RUN apt update && \
 
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /root/.bashrc
 
-CMD [ "/usr/bin/bash", "-c", "ros2 run usb_cam usb_cam_node_exe" ]
+COPY --link docker/camera_params.yml /root/camera_params.yml
+
+CMD [ "/usr/bin/bash", "-c", "ros2 run usb_cam usb_cam_node_exe --ros-args --params-file /root/camera_params.yml" ]
