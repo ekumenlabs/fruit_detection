@@ -177,9 +177,18 @@ def register_lights_placement():
         )
         return lights.node
     rep.randomizer.register(randomize_lights)
+    
+def register_groundplane_colors():
+    def randomize_groundplane_colors():
+        object_prims = rep.get.prims(path_pattern="/World/GroundPlane")
+        with object_prims:
+            rep.randomizer.color(colors=rep.distribution.uniform((0, 0, 0), (1, 1, 1)))
+        return object_prims.node
+    rep.randomizer.register(randomize_groundplane_colors)
 
 register_move_objects()
 register_lights_placement()
+register_groundplane_colors()
 
 
 # Get the writer from the registry and initialize it with the given config parameters
@@ -193,6 +202,7 @@ writer.attach(sdg_camera_render_product)
 with rep.trigger.on_frame():
     rep.randomizer.move_objects()
     rep.randomizer.randomize_lights()
+    rep.randomizer.randomize_groundplane_colors()
 
 sdg_camera_render_product.hydra_texture.set_updates_enabled(True)
 
