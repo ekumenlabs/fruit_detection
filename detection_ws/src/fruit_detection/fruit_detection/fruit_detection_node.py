@@ -16,11 +16,11 @@ import torchvision
 from torchvision import transforms as T
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
-_FRUIT_CATEGORIES=[
-    "apple",
-    "avocado",
-    "lime",
-]
+_FRUIT_CATEGORIES={
+    0: "apple",
+    1: "avocado",
+    2: "lime",
+}
 
 def get_transform():
     transforms = []
@@ -29,7 +29,7 @@ def get_transform():
     transforms.append(T.ConvertImageDtype(torch.float))
     return T.Compose(transforms)
 
-class DetectionNode(Node):
+class FruitDetectionNode(Node):
     """
     Reads images from /image_raw and publishes another image
     into /proc_image with detections made with a fasterrcnn_resnet50_fpn model.
@@ -39,6 +39,7 @@ class DetectionNode(Node):
     TARGET_ENCODING="bgr8"
     TOPIC_QOS_QUEUE_LENGTH=10
     RECT_COLOR=(0, 0, 255)
+    SCORE_THRESHOLD=0.7
 
     def __init__(self) -> None:
         """Constructor"""
@@ -46,9 +47,9 @@ class DetectionNode(Node):
         self.declare_parameter('model_path', 'model.pth')
         self.__model_path = self.get_parameter('model_path').get_parameter_value().string_value
 
-        self.image_subscription = self.create_subscription(Image, "/image_raw", self.image_callback, 1)
-        self.image_publisher = self.create_publisher(Image, '/proc_image', DetectionNode.TOPIC_QOS_QUEUE_LENGTH)
-        self.detections_publisher = self.create_publisher(Detection2DArray, '/detections', DetectionNode.TOPIC_QOS_QUEUE_LENGTH)
+        self.image_subscription = self.create_subscription(Image, "/image_raw", self.image_callback, FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH)
+        self.image_publisher = self.create_publisher(Image, '/proc_image', FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH)
+        self.detections_publisher = self.create_publisher(Detection2DArray, '/detections', FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH)
         self.cv_bridge = CvBridge()
         self.device_str = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.device = torch.device(self.device_str)
@@ -64,7 +65,7 @@ class DetectionNode(Node):
         self.model = self.model.to(self.device)
         self.model.load_state_dict(torch.load(self.__model_path, weights_only=True))
         self.model.eval()
-        self._labels = {idx: cls for (idx, cls) in enumerate(_FRUIT_CATEGORIES)}
+        self._labels = _FRUIT_CATEGORIES
 
     def image_to_tensor(self, img):
         transformed_img = self.ingest_transform(img)
@@ -83,7 +84,7 @@ class DetectionNode(Node):
             output = output[0]
             results = []
             for i, (box, score, label) in enumerate(zip(output['boxes'], output['scores'], output['labels'])):
-                if score >= 0.7:
+                if score >= FruitDetectionNode.SCORE_THRESHOLD:
                     results.append({'box':box,'score':score, 'label':self._labels[label.item()]})
         return results
    
@@ -97,7 +98,7 @@ class DetectionNode(Node):
         for detection in detections:
             row = detection['box']
             x1, y1, x2, y2 = int(row[0]), int(row[1]), int(row[2]), int(row[3])
-            cv2.rectangle(frame, (x1, y1), (x2, y2), DetectionNode.RECT_COLOR, 1)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), FruitDetectionNode.RECT_COLOR, 1)
             cv2.putText(frame, str(detection['label']), (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1)
 
     def detection_to_ros2(self, detections, header):
@@ -132,7 +133,7 @@ class DetectionNode(Node):
             bbox.center.position.y = float(y2 - y1) / 2.0
             bbox.center.position.y = float(y2 - y1) / 2.0
             detection_2d.bbox = bbox
-            detection_2d.id = "face"
+            detection_2d.id = detection["label"]
             object_hypothesis_with_pose = ObjectHypothesisWithPose()
             object_hypothesis = ObjectHypothesis()
             object_hypothesis.class_id = detection['label']
@@ -151,7 +152,7 @@ class DetectionNode(Node):
             msg (Image): Received image.
         """
         msg_header = msg.header
-        cv_frame = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding=DetectionNode.TARGET_ENCODING)
+        cv_frame = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING)
         detections = self.score_frame(cv_frame)
         self.plot_boxes(detections, cv_frame)
         detections_msg = self.detection_to_ros2(detections, msg_header)
@@ -159,7 +160,7 @@ class DetectionNode(Node):
         self.image_publisher.publish(
             self.cv_bridge.cv2_to_imgmsg(
                 cv_frame,
-                encoding=DetectionNode.TARGET_ENCODING,
+                encoding=FruitDetectionNode.TARGET_ENCODING,
                 header=msg_header
             )
         )
@@ -169,7 +170,7 @@ class DetectionNode(Node):
 def main(args=None) -> None:
     """Main function."""
     rclpy.init(args=args)
-    node = DetectionNode()
+    node = FruitDetectionNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

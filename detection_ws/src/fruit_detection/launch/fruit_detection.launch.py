@@ -6,15 +6,15 @@ def generate_launch_description() -> LaunchDescription:
     
     ----
     Returns:
-        LaunchDescription: With just the detection_node.
+        LaunchDescription: With just the fruit_detection_node.
     """
     ld = LaunchDescription()
-    detection_node = Node(
-        package="detection",
-        executable="detection_node",
+    fruit_detection_node = Node(
+        package="fruit_detection",
+        executable="fruit_detection_node",
         parameters=[
             {'model_path': '/root/detection_ws/model/model.pth'}
         ]
     )
-    ld.add_action(detection_node)
+    ld.add_action(fruit_detection_node)
     return ld

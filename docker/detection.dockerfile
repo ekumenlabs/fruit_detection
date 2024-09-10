@@ -4,7 +4,7 @@ FROM osrf/ros:${ROS_DISTRO}-desktop-full AS detection_prod
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-COPY --link detection_ws/src/detection/package.xml /root/detection_ws/src/detection/package.xml
+COPY --link detection_ws/src/fruit_detection/package.xml /root/detection_ws/src/fruit_detection/package.xml
 
 WORKDIR /root/detection_ws/
 

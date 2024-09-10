@@ -3,7 +3,7 @@ from glob import glob
 
 from setuptools import find_packages, setup
 
-PACKAGE_NAME = "detection"
+PACKAGE_NAME = "fruit_detection"
 
 setup(
     name=PACKAGE_NAME,
@@ -24,7 +24,7 @@ setup(
     tests_require=["pytest"],
     entry_points={
         'console_scripts': [
-            'detection_node = detection.detection_node:main',
+            'fruit_detection_node = fruit_detection.fruit_detection_node:main',
         ],
     },
 )
