@@ -17,9 +17,10 @@ from torchvision import transforms as T
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 _FRUIT_CATEGORIES={
-    0: "apple",
-    1: "avocado",
-    2: "lime",
+    0: "background",
+    1: "apple",
+    2: "avocado",
+    3: "lime",
 }
 
 def get_transform():
