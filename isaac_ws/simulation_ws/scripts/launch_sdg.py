@@ -27,12 +27,19 @@ SEMANTIC_OBJECTS={
         "prim": "/World/Lime",
     },
 }
+# General object pose configuration.
 OBJECTS_POSE_CONFIG={
     "min_pos": (-2., -2., 0.5),
     "max_pos": (2., 2., 0.5),
     "min_rot": (-180., -90., -180.),
     "max_rot": (180., 90, 180.),
 }
+# Height levels for each object.
+OBJECTS_Z=[1., 2., 3.]
+# Individual object pose configuration.
+APPLE_POSE_CONFIG=OBJECTS_POSE_CONFIG
+AVOCADO_POSE_CONFIG=OBJECTS_POSE_CONFIG
+LIME_POSE_CONFIG=OBJECTS_POSE_CONFIG
 OBJECTS_SCALE=(0.1, 0.1, 0.1)
 LIGHT_CONFIG={
     "min_color": (0.5, 0.5, 0.5), # gray
@@ -159,20 +166,64 @@ sdg_camera_render_product = rep.create.render_product(
 )
 sdg_camera_render_product.hydra_texture.set_updates_enabled(False)
 
+# Keeps track of the frame index. It helps to switch the height level
+# of each object. The sequence is: apple - avocado - lime. The function that
+# moves the lime will also increment it.
+frame_index = 0
+
 def register_move_objects():
-    def move_objects():
-        object_prims = rep.get.prims(semantics=[
-            ("class", SEMANTIC_OBJECTS["Apple"]["class"]),
-            ("class", SEMANTIC_OBJECTS["Avocado"]["class"]),
-            ("class", SEMANTIC_OBJECTS["Lime"]["class"]),
-        ])
+    def move_apple():
+        # Update the height level.
+        global frame_index
+        apple_z = OBJECTS_Z[(frame_index + 0) % 3]
+        APPLE_POSE_CONFIG["min_pos"] = (APPLE_POSE_CONFIG["min_pos"][0], APPLE_POSE_CONFIG["min_pos"][1], apple_z)
+        APPLE_POSE_CONFIG["max_pos"] = (APPLE_POSE_CONFIG["max_pos"][0], APPLE_POSE_CONFIG["max_pos"][1], apple_z)
+        # Obtain the prim.
+        object_prims = rep.get.prims(semantics=[("class", SEMANTIC_OBJECTS["Apple"]["class"]),])
+        # Randomize the pose.
         with object_prims:
             rep.modify.pose(
-                position=rep.distribution.uniform(OBJECTS_POSE_CONFIG["min_pos"], OBJECTS_POSE_CONFIG["max_pos"]),
-                rotation=rep.distribution.uniform(OBJECTS_POSE_CONFIG["min_rot"], OBJECTS_POSE_CONFIG["max_rot"])
+                position=rep.distribution.uniform(APPLE_POSE_CONFIG["min_pos"], APPLE_POSE_CONFIG["max_pos"]),
+                rotation=rep.distribution.uniform(APPLE_POSE_CONFIG["min_rot"], APPLE_POSE_CONFIG["max_rot"])
             )
         return object_prims.node
-    rep.randomizer.register(move_objects)
+
+    def move_avocado():
+        # Update the height level.
+        global frame_index
+        avocado_z = OBJECTS_Z[(frame_index + 1) % 3]
+        AVOCADO_POSE_CONFIG["min_pos"] = (AVOCADO_POSE_CONFIG["min_pos"][0], AVOCADO_POSE_CONFIG["min_pos"][1], avocado_z)
+        AVOCADO_POSE_CONFIG["max_pos"] = (AVOCADO_POSE_CONFIG["max_pos"][0], AVOCADO_POSE_CONFIG["max_pos"][1], avocado_z)
+        # Obtain the prim.
+        object_prims = rep.get.prims(semantics=[("class", SEMANTIC_OBJECTS["Avocado"]["class"])])
+        # Randomize the pose.
+        with object_prims:
+            rep.modify.pose(
+                position=rep.distribution.uniform(AVOCADO_POSE_CONFIG["min_pos"], AVOCADO_POSE_CONFIG["max_pos"]),
+                rotation=rep.distribution.uniform(AVOCADO_POSE_CONFIG["min_rot"], AVOCADO_POSE_CONFIG["max_rot"])
+            )
+        return object_prims.node
+
+    def move_lime():
+        # Update the height level.
+        global frame_index
+        lime_z = OBJECTS_Z[(frame_index + 2) % 3]
+        frame_index += 1
+        LIME_POSE_CONFIG["min_pos"] = (LIME_POSE_CONFIG["min_pos"][0], LIME_POSE_CONFIG["min_pos"][1], lime_z)
+        LIME_POSE_CONFIG["max_pos"] = (LIME_POSE_CONFIG["max_pos"][0], LIME_POSE_CONFIG["max_pos"][1], lime_z)
+        # Obtain the prim.
+        object_prims = rep.get.prims(semantics=[("class", SEMANTIC_OBJECTS["Lime"]["class"]),])
+        # Randomize the pose.
+        with object_prims:
+            rep.modify.pose(
+                position=rep.distribution.uniform(LIME_POSE_CONFIG["min_pos"], LIME_POSE_CONFIG["max_pos"]),
+                rotation=rep.distribution.uniform(LIME_POSE_CONFIG["min_rot"], LIME_POSE_CONFIG["max_rot"])
+            )
+        return object_prims.node
+    
+    rep.randomizer.register(move_apple)
+    rep.randomizer.register(move_avocado)
+    rep.randomizer.register(move_lime)
 
 
 def register_lights():
@@ -214,7 +265,6 @@ register_move_objects()
 register_lights()
 register_groundplane_colors()
 
-
 # Get the writer from the registry and initialize it with the given config parameters
 writer = rep.WriterRegistry.get("BasicWriter")
 writer.initialize(**WRITER_CONFG)
@@ -227,7 +277,9 @@ with rep.trigger.on_frame():
     rep.randomizer.randomize_distant_light()
     rep.randomizer.randomize_cylinder_light()
     rep.randomizer.randomize_sphere_light()
-    rep.randomizer.move_objects()
+    rep.randomizer.move_apple()
+    rep.randomizer.move_avocado()
+    rep.randomizer.move_lime()
     rep.randomizer.randomize_groundplane_colors()
 
 sdg_camera_render_product.hydra_texture.set_updates_enabled(True)
