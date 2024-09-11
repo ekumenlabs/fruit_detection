@@ -15,6 +15,7 @@ import torch
 import torchvision
 from torchvision import transforms as T
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+import time
 
 _FRUIT_CATEGORIES={
     0: "background",
@@ -72,15 +73,17 @@ class FruitDetectionNode(Node):
         transformed_img = self.ingest_transform(img)
         return [transformed_img.to(self.device)]
 
+    def cv2_to_torch_frame(self, img):
+        return self.image_to_tensor(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
     def score_frame(self, frame):
         """
         function scores each frame of the video and returns results.
         :param frame: frame to be infered.
         :return: labels and coordinates of objects found. 
         """
-        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         with torch.no_grad():
-            output = self.model(self.image_to_tensor(img))
+            output = self.model(frame)
             # As we only feed one image, we should get only one output
             output = output[0]
             results = []
@@ -154,7 +157,14 @@ class FruitDetectionNode(Node):
         """
         msg_header = msg.header
         cv_frame = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING)
-        detections = self.score_frame(cv_frame)
+        torch_frame = self.cv2_to_torch_frame(cv_frame)
+
+        inference_start_time = time.perf_counter()
+        detections = self.score_frame(torch_frame)
+        inference_end_time = time.perf_counter()
+
+        self.get_logger().info(f'Inference time: {str(inference_end_time - inference_start_time)}', throttle_duration_sec=1)
+
         self.plot_boxes(detections, cv_frame)
         detections_msg = self.detection_to_ros2(detections, msg_header)
 
