@@ -75,9 +75,10 @@ class FruitDataset(torch.utils.data.Dataset):
         self.box = list(sorted(os.listdir(os.path.join(root, "npy"))))
         
         self.static_labels = {
-            "apple": 0,
-            "avocado": 1,
-            "lime": 2,
+            "background": 0,
+            "apple": 1,
+            "avocado": 2,
+            "lime": 3,
         }
         self.num_classes = len(self.static_labels)
 
