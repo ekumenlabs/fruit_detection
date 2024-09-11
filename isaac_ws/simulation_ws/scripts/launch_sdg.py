@@ -1,10 +1,8 @@
 from datetime import datetime
 
-import numpy as np
-
 import carb
-
 from isaacsim import SimulationApp
+import numpy as np
 
 HEADLESS=False
 SIMULATION_APP_CONFIG={
@@ -36,12 +34,20 @@ OBJECTS_POSE_CONFIG={
 }
 OBJECTS_SCALE=(0.1, 0.1, 0.1)
 LIGHT_CONFIG={
-    "min_color": (0.5, 0.5, 0.5),
-    "max_color": (0.9, 0.9, 0.9),
-    "min_intensity": 500,
-    "max_intensity": 1000,
-    "min_pos": (-3., -3., 10.),
-    "max_pos": (3., 3., 20.),
+    "min_color": (0.5, 0.5, 0.5), # gray
+    "max_color": (0.9, 0.9, 0.9), # almost white
+    "min_distant_intensity": 500.,
+    "max_distant_intensity": 900.,
+    "min_sphere_intensity": 100000.,
+    "max_sphere_intensity": 500000.,
+    "min_cylinder_intensity": 100000.,
+    "max_cylinder_intensity": 500000.,
+    "min_pos": (-5., -5., 10.),
+    "max_pos": (5., 5., 20.),
+    "min_temperature": 2000., # warm light, indoor home - like light and some outdoor places
+    "max_temperature": 7000., # cold light, indoor commercial light type
+    "min_exposure": 0., # intensity = 2^exposure * intesity, setting to 0. disables the effect.
+    "max_exposure": 0.,
 }
 SDG_CAMERA={
     "width": 640,
@@ -77,7 +83,6 @@ from omni.isaac.core.utils import prims
 from omni.isaac.core.utils.semantics import remove_all_semantics
 from omni.isaac.core.utils.stage import get_current_stage, create_new_stage
 from omni.isaac.nucleus import get_assets_root_path
-import pxr
 
 # Get server path
 assets_root_path = get_assets_root_path()
@@ -165,18 +170,33 @@ def register_move_objects():
         return object_prims.node
     rep.randomizer.register(move_objects)
 
-def register_lights_placement():
-    def randomize_lights():
-        lights = rep.create.light(
-            light_type="distant",
+
+def register_lights():
+    def create_light_node(type: str):
+        light = rep.create.light(
+            light_type=type,
             color=rep.distribution.uniform(LIGHT_CONFIG["min_color"], LIGHT_CONFIG["max_color"]),
-            intensity=rep.distribution.uniform(LIGHT_CONFIG["min_intensity"], LIGHT_CONFIG["max_intensity"]),
+            intensity=rep.distribution.uniform(LIGHT_CONFIG[f"min_{type}_intensity"], LIGHT_CONFIG[f"max_{type}_intensity"]),
             position=rep.distribution.uniform(LIGHT_CONFIG["min_pos"], LIGHT_CONFIG["max_pos"]),
+            temperature=rep.distribution.uniform(LIGHT_CONFIG["min_temperature"], LIGHT_CONFIG["max_temperature"]),
+            exposure=rep.distribution.uniform(LIGHT_CONFIG["min_exposure"], LIGHT_CONFIG["max_exposure"]),
             scale=1.,
-            count=3,
+            count=1,
         )
-        return lights.node
-    rep.randomizer.register(randomize_lights)
+        return light.node
+
+    def randomize_distant_light():
+        return create_light_node("distant")
+
+    def randomize_cylinder_light():
+        return create_light_node("cylinder")
+
+    def randomize_sphere_light():
+        return create_light_node("sphere")
+
+    rep.randomizer.register(randomize_distant_light)
+    rep.randomizer.register(randomize_cylinder_light)
+    rep.randomizer.register(randomize_sphere_light)
     
 def register_groundplane_colors():
     def randomize_groundplane_colors():
@@ -187,7 +207,7 @@ def register_groundplane_colors():
     rep.randomizer.register(randomize_groundplane_colors)
 
 register_move_objects()
-register_lights_placement()
+register_lights()
 register_groundplane_colors()
 
 
@@ -200,8 +220,10 @@ writer.attach(sdg_camera_render_product)
 
 # Setup the randomizations to be triggered every frame
 with rep.trigger.on_frame():
+    rep.randomizer.randomize_distant_light()
+    rep.randomizer.randomize_cylinder_light()
+    rep.randomizer.randomize_sphere_light()
     rep.randomizer.move_objects()
-    rep.randomizer.randomize_lights()
     rep.randomizer.randomize_groundplane_colors()
 
 sdg_camera_render_product.hydra_texture.set_updates_enabled(True)
