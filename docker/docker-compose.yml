@@ -55,6 +55,8 @@ services:
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
     volumes:
       - /dev/shm:/dev/shm
+      - ../model/:/root/detection_ws/model
+      - torch_cache:/root/.cache/torch
     devices:
       - /dev/dri:/dev/dri
     deploy:
