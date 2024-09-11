@@ -42,6 +42,7 @@ class FruitDetectionNode(Node):
     TOPIC_QOS_QUEUE_LENGTH=10
     RECT_COLOR=(0, 0, 255)
     SCORE_THRESHOLD=0.7
+    LOGGING_THROTTLE=1
 
     def __init__(self) -> None:
         """Constructor"""
@@ -163,7 +164,8 @@ class FruitDetectionNode(Node):
         detections = self.score_frame(torch_frame)
         inference_end_time = time.perf_counter()
 
-        self.get_logger().info(f'Inference time: {str(inference_end_time - inference_start_time)}', throttle_duration_sec=1)
+        self.get_logger().info(f'Inference time: {str(inference_end_time - inference_start_time)}',
+            throttle_duration_sec=FruitDetectionNode.LOGGING_THROTTLE)
 
         self.plot_boxes(detections, cv_frame)
         detections_msg = self.detection_to_ros2(detections, msg_header)
