@@ -71,6 +71,7 @@ class FruitDataset(torch.utils.data.Dataset):
         self.imgs = list(sorted(os.listdir(os.path.join(root, "png"))))
 
         self.static_labels = [
+            "background",
             "apple",
             "avocado",
             "lime"

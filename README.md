@@ -93,6 +93,10 @@ To stop the system you can Ctrl-C or from another terminal call:
 docker compose -f docker/docker-compose.yml --profile test_real_pipeline down
 ```
 
+### Running test_real_pipeline
+
+For running this pipeline is needed to have a trained model (.pth file) on the `model` folder. By default, the detection service will try to load a file called `model.pth`, but this can be override by changing the `model_path` parameter from `detection_ws/src/detection/launch/detection.launch.py`.
+
 ## Test
 
 ### Detection stack
@@ -122,3 +126,9 @@ And once it finishes (note the scene does not evolve anymore) check the generate
 1. How do I clean up all the docker resources?
 
 Your good old friend `docker system prune` and the more agressive `docker system prune --all`. **Caution:** it will likely erase stuff you didn't want to erase as it is a blanket prune. Read the documentation for more information.
+
+2. Do you have problems with XWindows?
+
+```bash
+xhost +si:localuser:root
+```

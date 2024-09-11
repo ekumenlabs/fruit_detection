@@ -3,7 +3,7 @@ from glob import glob
 
 from setuptools import find_packages, setup
 
-PACKAGE_NAME = "mock_detection"
+PACKAGE_NAME = "fruit_detection"
 
 setup(
     name=PACKAGE_NAME,
@@ -15,16 +15,16 @@ setup(
         (os.path.join("share", PACKAGE_NAME, "config"), glob(os.path.join("config", "*"))),
         (os.path.join("share", PACKAGE_NAME, "launch"), glob(os.path.join("launch", "*launch.py"))),
     ],
-    install_requires=["setuptools"],
+    install_requires=["setuptools","torch", "torchvision"],
     zip_safe=True,
     maintainer="Agustin Alba Chicar",
     maintainer_email="ag.albachicar@ekumenlabs.com",
-    description="Creates a mock detection in the camera feed.",
+    description="Creates a detection in the camera feed.",
     license="Apache-2.0",
     tests_require=["pytest"],
     entry_points={
         'console_scripts': [
-            'mock_detection_node = mock_detection.mock_detection_node:main',
+            'fruit_detection_node = fruit_detection.fruit_detection_node:main',
         ],
     },
 )
