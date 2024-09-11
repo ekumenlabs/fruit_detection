@@ -8,6 +8,7 @@ HEADLESS=False
 SIMULATION_APP_CONFIG={
     "renderer": "RayTracedLighting",
     "headless": HEADLESS,
+    "anti_aliasing": "FXAA",
 }
 SEMANTIC_OBJECTS={
     "Apple": {
@@ -83,6 +84,9 @@ from omni.isaac.core.utils import prims
 from omni.isaac.core.utils.semantics import remove_all_semantics
 from omni.isaac.core.utils.stage import get_current_stage, create_new_stage
 from omni.isaac.nucleus import get_assets_root_path
+
+# Configure replicator settings.
+rep.settings.carb_settings("/omni/replicator/RTSubframes", 3)
 
 # Get server path
 assets_root_path = get_assets_root_path()
