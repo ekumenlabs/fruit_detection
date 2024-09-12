@@ -3,6 +3,10 @@
 SIMULATION_APP_CONFIG:
   renderer: RayTracedLighting # Renderer with ray tracing for realistic lighting.
   headless: False # Enable graphics display for visualization.
+  anti_aliasing": FXAA
+
+# Height levels for each object.
+OBJECTS_Z: [1., 2., 3.]
 
 GROUND_PLANE:
   prim_path: "/World/GroundPlane" # Path to place the ground plane in the scene.
@@ -30,16 +34,34 @@ OBJECTS_POSE_CONFIG:
   min_rot: [-180.0, -90.0, -180.0] # Minimum rotation (Euler angles) for objects.
   max_rot: [180.0, 90.0, 180.0] # Maximum rotation (Euler angles) for objects.
 
+# Individual object pose configuration.
+#APPLE_POSE_CONFIG:  # Apple-specific pose configuration, using shared object pose config.
+#  <<: *OBJECTS_POSE_CONFIG  # Inherit the shared OBJECTS_POSE_CONFIG.
+
+#AVOCADO_POSE_CONFIG:  # Avocado-specific pose configuration, using shared object pose config.
+#  <<: *OBJECTS_POSE_CONFIG  # Inherit the shared OBJECTS_POSE_CONFIG.
+
+#LIME_POSE_CONFIG:  # Lime-specific pose configuration, using shared object pose config.
+#  <<: *OBJECTS_POSE_CONFIG  # Inherit the shared OBJECTS_POSE_CONFIG.
+
 OBJECTS_SCALE: [0.1, 0.1, 0.1] # Uniform scaling factor for all objects.
 
 LIGHT_CONFIG:
   light_type: distant # Type of light, "distant" for sunlight-like behavior.
   min_color: [0.5, 0.5, 0.5] # Minimum RGB color for light (gray).
   max_color: [0.9, 0.9, 0.9] # Maximum RGB color for light (almost white).
-  min_intensity: 500 # Minimum light intensity for variability.
-  max_intensity: 1000 # Maximum light intensity for variability.
+  min_distant_intensity: 500.0  # Minimum intensity for distant light.
+  max_distant_intensity: 900.0  # Maximum intensity for distant light.
+  min_sphere_intensity: 100000.0  # Minimum intensity for spherical light.
+  max_sphere_intensity: 500000.0  # Maximum intensity for spherical light.
+  min_cylinder_intensity: 100000.0  # Minimum intensity for cylindrical light.
+  max_cylinder_intensity: 500000.0  # Maximum intensity for cylindrical light.
   min_pos: [-3.0, -3.0, 10.0] # Minimum XYZ position for light placement.
   max_pos: [3.0, 3.0, 20.0] # Maximum XYZ position for light placement.
+  min_temperature: 2000.0  # Minimum color temperature (warm light).
+  max_temperature: 7000.0  # Maximum color temperature (cool light).
+  min_exposure: 0.0  # Minimum exposure, 0 disables exposure effect.
+  max_exposure: 0.0  # Maximum exposure, 0 disables exposure effect.
 
 COLOR_RANDOMIZER:
   type: uniform # Indicates that the color randomization should follow a uniform distribution.

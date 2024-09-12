@@ -3,84 +3,9 @@ from datetime import datetime
 import carb
 from isaacsim import SimulationApp
 import numpy as np
-
 import yaml
 
 yaml_file_path = "/root/isaac_ws/simulation_ws/scripts/config.yml"
-HEADLESS=False
-SIMULATION_APP_CONFIG={
-    "renderer": "RayTracedLighting",
-    "headless": HEADLESS,
-    "anti_aliasing": "FXAA",
-}
-SEMANTIC_OBJECTS={
-    "Apple": {
-        "url": "omniverse://localhost/NVIDIA/Assets/ArchVis/Residential/Food/Fruit/Apple.usd",
-        "class": "apple",
-        "prim": "/World/Apple",
-    },
-    "Avocado": {
-        "url": "omniverse://localhost/NVIDIA/Assets/ArchVis/Residential/Food/Fruit/Avocado01.usd",
-        "class": "avocado",
-        "prim": "/World/Avocado",
-    },
-    "Lime": {
-        "url": "omniverse://localhost/NVIDIA/Assets/ArchVis/Residential/Food/Fruit/Lime01.usd",
-        "class": "lime",
-        "prim": "/World/Lime",
-    },
-}
-# General object pose configuration.
-OBJECTS_POSE_CONFIG={
-    "min_pos": (-2., -2., 0.5),
-    "max_pos": (2., 2., 0.5),
-    "min_rot": (-180., -90., -180.),
-    "max_rot": (180., 90, 180.),
-}
-# Height levels for each object.
-OBJECTS_Z=[1., 2., 3.]
-# Individual object pose configuration.
-APPLE_POSE_CONFIG=OBJECTS_POSE_CONFIG
-AVOCADO_POSE_CONFIG=OBJECTS_POSE_CONFIG
-LIME_POSE_CONFIG=OBJECTS_POSE_CONFIG
-OBJECTS_SCALE=(0.1, 0.1, 0.1)
-LIGHT_CONFIG={
-    "min_color": (0.5, 0.5, 0.5), # gray
-    "max_color": (0.9, 0.9, 0.9), # almost white
-    "min_distant_intensity": 500.,
-    "max_distant_intensity": 900.,
-    "min_sphere_intensity": 100000.,
-    "max_sphere_intensity": 500000.,
-    "min_cylinder_intensity": 100000.,
-    "max_cylinder_intensity": 500000.,
-    "min_pos": (-5., -5., 10.),
-    "max_pos": (5., 5., 20.),
-    "min_temperature": 2000., # warm light, indoor home - like light and some outdoor places
-    "max_temperature": 7000., # cold light, indoor commercial light type
-    "min_exposure": 0., # intensity = 2^exposure * intesity, setting to 0. disables the effect.
-    "max_exposure": 0.,
-}
-SDG_CAMERA={
-    "width": 640,
-    "height": 480,
-    "name": "sdg_camera",
-    "pos": (0., 0., 5.),
-    "rot": (0., -90., 0.),
-    "focal_length": 2.1,
-    "focus_distance": 5.5,
-    "f_stop": 200,
-    "horizontal_aperture": 5.856,
-    "vertical_aperture": 3.276,
-    "clipping_range": (0.01, 10000000),
-    "projection_type": "pinhole",
-}
-stamp_str = datetime.now().strftime("%Y%m%d%H%M%S")
-WRITER_CONFG={
-    "output_dir": f"/root/isaac_ws/datasets/{stamp_str}_out_fruit_sdg",
-    "rgb": True,
-    "bounding_box_2d_tight": True,
-}
-NUM_FRAMES=300
 
 with open(yaml_file_path, 'r') as file:
     try:
@@ -88,6 +13,11 @@ with open(yaml_file_path, 'r') as file:
         print(config)
     except yaml.YAMLError as exc:
         print(f"Error while reading YAML file: {exc}")
+
+# Individual object pose configuration.
+APPLE_POSE_CONFIG=config["OBJECTS_POSE_CONFIG"]
+AVOCADO_POSE_CONFIG=config["OBJECTS_POSE_CONFIG"]
+LIME_POSE_CONFIG=config["OBJECTS_POSE_CONFIG"]
 
 stamp_str = datetime.now().strftime("%Y%m%d%H%M%S")
 simulation_app = SimulationApp(launch_config=config["SIMULATION_APP_CONFIG"])
@@ -104,6 +34,7 @@ from omni.isaac.core.utils.stage import get_current_stage, create_new_stage
 from omni.isaac.nucleus import get_assets_root_path
 import pxr
 from pxr import Gf, UsdGeom
+
 # Configure replicator settings.
 rep.settings.carb_settings("/omni/replicator/RTSubframes", 3)
 
@@ -128,7 +59,7 @@ for prim in stage.Traverse():
 
 # Create a ground plane
 PhysicsContext()
-ground_plane = GroundPlane(prim_path=config["GROUND_PLANE"]["prim_path"], size=config["GROUND_PLANE"]["size"], color=np.array(config["GROUND_PLANE"]["color"]))
+ground_plane = GroundPlane(prim_path="/World/GroundPlane", size=10, color=np.array([1., 1., 1.]))
 
 # Spawn an apple in a random pose.
 apple_prim = prims.create_prim(
@@ -184,24 +115,14 @@ sdg_camera_render_product.hydra_texture.set_updates_enabled(False)
 frame_index = 0
 
 def register_move_objects():
-    def move_objects():
-        object_prims = rep.get.prims(semantics=[
-            ("class", config["SEMANTIC_OBJECTS"]["Apple"]["class"]),
-            ("class", config["SEMANTIC_OBJECTS"]["Avocado"]["class"]),
-            ("class", config["SEMANTIC_OBJECTS"]["Lime"]["class"]),
-        ])
-        with object_prims:
-            rep.modify.pose(
-                position=rep.distribution.uniform(config["OBJECTS_POSE_CONFIG"]["min_pos"], config["OBJECTS_POSE_CONFIG"]["max_pos"]),
-                rotation=rep.distribution.uniform(config["OBJECTS_POSE_CONFIG"]["min_rot"], config["OBJECTS_POSE_CONFIG"]["max_rot"])
     def move_apple():
         # Update the height level.
         global frame_index
-        apple_z = OBJECTS_Z[(frame_index + 0) % 3]
+        apple_z = config["OBJECTS_Z"][(frame_index + 0) % 3]
         APPLE_POSE_CONFIG["min_pos"] = (APPLE_POSE_CONFIG["min_pos"][0], APPLE_POSE_CONFIG["min_pos"][1], apple_z)
         APPLE_POSE_CONFIG["max_pos"] = (APPLE_POSE_CONFIG["max_pos"][0], APPLE_POSE_CONFIG["max_pos"][1], apple_z)
         # Obtain the prim.
-        object_prims = rep.get.prims(semantics=[("class", SEMANTIC_OBJECTS["Apple"]["class"]),])
+        object_prims = rep.get.prims(semantics=[("class", config["SEMANTIC_OBJECTS"]["Apple"]["class"]),])
         # Randomize the pose.
         with object_prims:
             rep.modify.pose(
@@ -210,21 +131,14 @@ def register_move_objects():
             )
         return object_prims.node
 
-def register_lights_placement():
-    def randomize_lights():
-        lights = rep.create.light(
-            light_type="distant",
-            color=rep.distribution.uniform(config["LIGHT_CONFIG"]["min_color"], config["LIGHT_CONFIG"]["max_color"]),
-            intensity=rep.distribution.uniform(config["LIGHT_CONFIG"]["min_intensity"], config["LIGHT_CONFIG"]["max_intensity"]),
-            position=rep.distribution.uniform(config["LIGHT_CONFIG"]["min_pos"], config["LIGHT_CONFIG"]["max_pos"]),
     def move_avocado():
         # Update the height level.
         global frame_index
-        avocado_z = OBJECTS_Z[(frame_index + 1) % 3]
+        avocado_z = config["OBJECTS_Z"][(frame_index + 1) % 3]
         AVOCADO_POSE_CONFIG["min_pos"] = (AVOCADO_POSE_CONFIG["min_pos"][0], AVOCADO_POSE_CONFIG["min_pos"][1], avocado_z)
         AVOCADO_POSE_CONFIG["max_pos"] = (AVOCADO_POSE_CONFIG["max_pos"][0], AVOCADO_POSE_CONFIG["max_pos"][1], avocado_z)
         # Obtain the prim.
-        object_prims = rep.get.prims(semantics=[("class", SEMANTIC_OBJECTS["Avocado"]["class"])])
+        object_prims = rep.get.prims(semantics=[("class", config["SEMANTIC_OBJECTS"]["Avocado"]["class"])])
         # Randomize the pose.
         with object_prims:
             rep.modify.pose(
@@ -236,12 +150,12 @@ def register_lights_placement():
     def move_lime():
         # Update the height level.
         global frame_index
-        lime_z = OBJECTS_Z[(frame_index + 2) % 3]
+        lime_z = config["OBJECTS_Z"][(frame_index + 2) % 3]
         frame_index += 1
         LIME_POSE_CONFIG["min_pos"] = (LIME_POSE_CONFIG["min_pos"][0], LIME_POSE_CONFIG["min_pos"][1], lime_z)
         LIME_POSE_CONFIG["max_pos"] = (LIME_POSE_CONFIG["max_pos"][0], LIME_POSE_CONFIG["max_pos"][1], lime_z)
         # Obtain the prim.
-        object_prims = rep.get.prims(semantics=[("class", SEMANTIC_OBJECTS["Lime"]["class"]),])
+        object_prims = rep.get.prims(semantics=[("class", config["SEMANTIC_OBJECTS"]["Lime"]["class"]),])
         # Randomize the pose.
         with object_prims:
             rep.modify.pose(
@@ -259,11 +173,11 @@ def register_lights():
     def create_light_node(type: str):
         light = rep.create.light(
             light_type=type,
-            color=rep.distribution.uniform(LIGHT_CONFIG["min_color"], LIGHT_CONFIG["max_color"]),
-            intensity=rep.distribution.uniform(LIGHT_CONFIG[f"min_{type}_intensity"], LIGHT_CONFIG[f"max_{type}_intensity"]),
-            position=rep.distribution.uniform(LIGHT_CONFIG["min_pos"], LIGHT_CONFIG["max_pos"]),
-            temperature=rep.distribution.uniform(LIGHT_CONFIG["min_temperature"], LIGHT_CONFIG["max_temperature"]),
-            exposure=rep.distribution.uniform(LIGHT_CONFIG["min_exposure"], LIGHT_CONFIG["max_exposure"]),
+            color=rep.distribution.uniform(config["LIGHT_CONFIG"]["min_color"], config["LIGHT_CONFIG"]["max_color"]),
+            intensity=rep.distribution.uniform(config["LIGHT_CONFIG"][f"min_{type}_intensity"], config["LIGHT_CONFIG"][f"max_{type}_intensity"]),
+            position=rep.distribution.uniform(config["LIGHT_CONFIG"]["min_pos"], config["LIGHT_CONFIG"]["max_pos"]),
+            temperature=rep.distribution.uniform(config["LIGHT_CONFIG"]["min_temperature"], config["LIGHT_CONFIG"]["max_temperature"]),
+            exposure=rep.distribution.uniform(config["LIGHT_CONFIG"]["min_exposure"], config["LIGHT_CONFIG"]["max_exposure"]),
             scale=1.,
             count=1,
         )
@@ -286,7 +200,7 @@ def register_groundplane_colors():
     def randomize_groundplane_colors():
         object_prims = rep.get.prims(path_pattern="/World/GroundPlane")
         with object_prims:
-            rep.randomizer.color(colors=rep.distribution.uniform(config["COLOR_RANDOMIZER"]["min_color"], config["COLOR_RANDOMIZER"]["max_color"]))
+            rep.randomizer.color(colors=rep.distribution.uniform((0, 0, 0), (1, 1, 1)))
         return object_prims.node
     rep.randomizer.register(randomize_groundplane_colors)
 
@@ -314,7 +228,7 @@ with rep.trigger.on_frame():
 sdg_camera_render_product.hydra_texture.set_updates_enabled(True)
 
 # Start the SDG
-print("Running SDG for {} frames.".format(config["NUM_FRAMES"]))
+print("Let's talk about {}.".format(config["NUM_FRAMES"]))
 for i in range(config["NUM_FRAMES"]):
     rep.orchestrator.step(delta_time=0.0)
 
