@@ -1,128 +1,36 @@
 from datetime import datetime
-
+import argparse
 import carb
 from isaacsim import SimulationApp
 import numpy as np
 import yaml
 
-yaml_file_path = "/root/isaac_ws/simulation_ws/scripts/config.yml"
-
-with open(yaml_file_path, 'r') as file:
+# Function to load the YAML configuration
+def load_config(yaml_file_path):
     try:
-        config = yaml.safe_load(file)
-        print(config)
+        with open(yaml_file_path, 'r') as file:
+            config = yaml.safe_load(file)
+            return config
     except yaml.YAMLError as exc:
         print(f"Error while reading YAML file: {exc}")
-
-# Individual object pose configuration.
-APPLE_POSE_CONFIG=config["OBJECTS_POSE_CONFIG"]
-AVOCADO_POSE_CONFIG=config["OBJECTS_POSE_CONFIG"]
-LIME_POSE_CONFIG=config["OBJECTS_POSE_CONFIG"]
-
-stamp_str = datetime.now().strftime("%Y%m%d%H%M%S")
-simulation_app = SimulationApp(launch_config=config["SIMULATION_APP_CONFIG"])
-
-
-# Late import of runtime modules (the SimulationApp needs to be created before loading the modules)
-import omni.replicator.core as rep
-# Custom util functions for the example
-from omni.isaac.core.physics_context import PhysicsContext
-from omni.isaac.core.objects.ground_plane import GroundPlane
-from omni.isaac.core.utils import prims
-from omni.isaac.core.utils.semantics import remove_all_semantics
-from omni.isaac.core.utils.stage import get_current_stage, create_new_stage
-from omni.isaac.nucleus import get_assets_root_path
-import pxr
-from pxr import Gf, UsdGeom
-
-# Configure replicator settings.
-rep.settings.carb_settings("/omni/replicator/RTSubframes", 3)
-
-# Get server path
-assets_root_path = get_assets_root_path()
-if assets_root_path is None:
-    carb.log_error("Could not get nucleus server path, closing application.")
-    simulation_app.close()
-
-# Creates a new stage.
-if not create_new_stage():
-    carb.log_error(f"Could not create a new stage, closing the application.")
-    simulation_app.close()
-stage = get_current_stage()
-
-# Disable capture on play (data generation will be triggered manually)
-rep.orchestrator.set_capture_on_play(False)
-
-# Clear any previous semantic data in the loaded stage
-for prim in stage.Traverse():
-    remove_all_semantics(prim, False)
-
-# Create a ground plane
-PhysicsContext()
-ground_plane = GroundPlane(prim_path="/World/GroundPlane", size=10, color=np.array([1., 1., 1.]))
-
-# Spawn an apple in a random pose.
-apple_prim = prims.create_prim(
-    prim_path=config["SEMANTIC_OBJECTS"]["Apple"]["prim"],
-    position=(-0.1, -0.05, 0.5),
-    orientation=(1., 0., 0., 0.),
-    scale=config["OBJECTS_SCALE"],
-    usd_path=config["SEMANTIC_OBJECTS"]["Apple"]["url"],
-    semantic_label=config["SEMANTIC_OBJECTS"]["Apple"]["class"],
-)
-
-# Spawn an avocado in a random pose.
-avocado_prim = prims.create_prim(
-    prim_path=config["SEMANTIC_OBJECTS"]["Avocado"]["prim"],
-    position=(0, 0.1, 0.5),
-    orientation=(1., 0., 0., 0.),
-    scale=config["OBJECTS_SCALE"],
-    usd_path=config["SEMANTIC_OBJECTS"]["Avocado"]["url"],
-    semantic_label=config["SEMANTIC_OBJECTS"]["Avocado"]["class"],
-)
-
-# Spawn a lime in a random pose.
-lime_prim = prims.create_prim(
-    prim_path=config["SEMANTIC_OBJECTS"]["Lime"]["prim"],
-    position=(0.1, -0.05, 0.5),
-    orientation=(1., 0., 0., 0.),
-    scale=config["OBJECTS_SCALE"],
-    usd_path=config["SEMANTIC_OBJECTS"]["Lime"]["url"],
-    semantic_label=config["SEMANTIC_OBJECTS"]["Lime"]["class"],
-)
-
-# Create the camera used for the acquisition.
-sdg_camera = rep.create.camera(
-    name=config["SDG_CAMERA"]["name"],
-    position=config["SDG_CAMERA"]["pos"],
-    rotation=config["SDG_CAMERA"]["rot"],
-    focal_length=config["SDG_CAMERA"]["focal_length"],
-    focus_distance=config["SDG_CAMERA"]["focus_distance"],
-    f_stop=config["SDG_CAMERA"]["f_stop"],
-    horizontal_aperture=config["SDG_CAMERA"]["horizontal_aperture"],
-    clipping_range=Gf.Vec2f(*config["SDG_CAMERA"]["clipping_range"]),
-    projection_type=config["SDG_CAMERA"]["projection_type"],
-    count=1,
-)
-sdg_camera_render_product = rep.create.render_product(
-    sdg_camera, (config["SDG_CAMERA"]["width"], config["SDG_CAMERA"]["height"]), name="SdgCameraView"
-)
-sdg_camera_render_product.hydra_texture.set_updates_enabled(False)
+        return None
 
 # Keeps track of the frame index. It helps to switch the height level
 # of each object. The sequence is: apple - avocado - lime. The function that
 # moves the lime will also increment it.
 frame_index = 0
 
-def register_move_objects():
+def register_move_objects(config, rep):
     def move_apple():
-        # Update the height level.
-        global frame_index
+        global frame_index  # Ensure that frame_index is shared across the functions
         apple_z = config["OBJECTS_Z"][(frame_index + 0) % 3]
+        APPLE_POSE_CONFIG = config["OBJECTS_POSE_CONFIG"]
         APPLE_POSE_CONFIG["min_pos"] = (APPLE_POSE_CONFIG["min_pos"][0], APPLE_POSE_CONFIG["min_pos"][1], apple_z)
-        APPLE_POSE_CONFIG["max_pos"] = (APPLE_POSE_CONFIG["max_pos"][0], APPLE_POSE_CONFIG["max_pos"][1], apple_z)
+        APPLE_POSE_CONFIG["max_pos"] = (APPLE_POSE_CONFIG["max_pos"][0], APPLE_POSE_CONFIG["max_pos"][1], apple_z)\
+        
         # Obtain the prim.
-        object_prims = rep.get.prims(semantics=[("class", config["SEMANTIC_OBJECTS"]["Apple"]["class"]),])
+        object_prims = rep.get.prims(semantics=[("class", config["SEMANTIC_OBJECTS"]["Apple"]["class"])])
+        
         # Randomize the pose.
         with object_prims:
             rep.modify.pose(
@@ -132,13 +40,15 @@ def register_move_objects():
         return object_prims.node
 
     def move_avocado():
-        # Update the height level.
-        global frame_index
+        global frame_index  # Ensure that frame_index is shared across the functions
         avocado_z = config["OBJECTS_Z"][(frame_index + 1) % 3]
+        AVOCADO_POSE_CONFIG = config["OBJECTS_POSE_CONFIG"]
         AVOCADO_POSE_CONFIG["min_pos"] = (AVOCADO_POSE_CONFIG["min_pos"][0], AVOCADO_POSE_CONFIG["min_pos"][1], avocado_z)
         AVOCADO_POSE_CONFIG["max_pos"] = (AVOCADO_POSE_CONFIG["max_pos"][0], AVOCADO_POSE_CONFIG["max_pos"][1], avocado_z)
+        
         # Obtain the prim.
         object_prims = rep.get.prims(semantics=[("class", config["SEMANTIC_OBJECTS"]["Avocado"]["class"])])
+        
         # Randomize the pose.
         with object_prims:
             rep.modify.pose(
@@ -148,14 +58,16 @@ def register_move_objects():
         return object_prims.node
 
     def move_lime():
-        # Update the height level.
-        global frame_index
+        global frame_index  # Ensure that frame_index is shared across the functions
         lime_z = config["OBJECTS_Z"][(frame_index + 2) % 3]
-        frame_index += 1
+        frame_index += 1  # Increment frame_index for next cycle
+        LIME_POSE_CONFIG = config["OBJECTS_POSE_CONFIG"]
         LIME_POSE_CONFIG["min_pos"] = (LIME_POSE_CONFIG["min_pos"][0], LIME_POSE_CONFIG["min_pos"][1], lime_z)
         LIME_POSE_CONFIG["max_pos"] = (LIME_POSE_CONFIG["max_pos"][0], LIME_POSE_CONFIG["max_pos"][1], lime_z)
+        
         # Obtain the prim.
-        object_prims = rep.get.prims(semantics=[("class", config["SEMANTIC_OBJECTS"]["Lime"]["class"]),])
+        object_prims = rep.get.prims(semantics=[("class", config["SEMANTIC_OBJECTS"]["Lime"]["class"])])
+        
         # Randomize the pose.
         with object_prims:
             rep.modify.pose(
@@ -163,13 +75,13 @@ def register_move_objects():
                 rotation=rep.distribution.uniform(LIME_POSE_CONFIG["min_rot"], LIME_POSE_CONFIG["max_rot"])
             )
         return object_prims.node
-    
+
+    # Register the movement functions
     rep.randomizer.register(move_apple)
     rep.randomizer.register(move_avocado)
     rep.randomizer.register(move_lime)
 
-
-def register_lights():
+def register_lights(config, rep):
     def create_light_node(type: str):
         light = rep.create.light(
             light_type=type,
@@ -195,50 +107,161 @@ def register_lights():
     rep.randomizer.register(randomize_distant_light)
     rep.randomizer.register(randomize_cylinder_light)
     rep.randomizer.register(randomize_sphere_light)
-    
-def register_groundplane_colors():
+
+def register_groundplane_colors(rep):
     def randomize_groundplane_colors():
         object_prims = rep.get.prims(path_pattern="/World/GroundPlane")
         with object_prims:
             rep.randomizer.color(colors=rep.distribution.uniform((0, 0, 0), (1, 1, 1)))
         return object_prims.node
+
     rep.randomizer.register(randomize_groundplane_colors)
 
-register_move_objects()
-register_lights()
-register_groundplane_colors()
+def main(args):
+    # Load the configuration file
+    config = load_config(args.config_file)
+    
+    if config is None:
+        print("Failed to load configuration file. Exiting.")
+        return
 
-# Get the writer from the registry and initialize it with the given config parameters
-writer = rep.WriterRegistry.get("BasicWriter")
-writer.initialize(**config["WRITER_CONFIG"])
+    # Initialize SimulationApp
+    stamp_str = datetime.now().strftime("%Y%m%d%H%M%S")
+    simulation_app = SimulationApp(launch_config=config["SIMULATION_APP_CONFIG"])
 
-# Attach writer to the render product
-writer.attach(sdg_camera_render_product)
+    # Import Replicator after SimulationApp is initialized
+    import omni.replicator.core as rep
+    from omni.isaac.core.physics_context import PhysicsContext
+    from omni.isaac.core.objects.ground_plane import GroundPlane
+    from omni.isaac.core.utils import prims
+    from omni.isaac.core.utils.semantics import remove_all_semantics
+    from omni.isaac.core.utils.stage import get_current_stage, create_new_stage
+    from omni.isaac.nucleus import get_assets_root_path
+    from pxr import Gf
 
-# Setup the randomizations to be triggered every frame
-with rep.trigger.on_frame():
-    rep.randomizer.randomize_distant_light()
-    rep.randomizer.randomize_cylinder_light()
-    rep.randomizer.randomize_sphere_light()
-    rep.randomizer.move_apple()
-    rep.randomizer.move_avocado()
-    rep.randomizer.move_lime()
-    rep.randomizer.randomize_groundplane_colors()
+    # Configure replicator settings
+    rep.settings.carb_settings("/omni/replicator/RTSubframes", 3)
 
-sdg_camera_render_product.hydra_texture.set_updates_enabled(True)
+    # Get server path
+    assets_root_path = get_assets_root_path()
+    if assets_root_path is None:
+        carb.log_error("Could not get nucleus server path, closing application.")
+        simulation_app.close()
 
-# Start the SDG
-print("Let's talk about {}.".format(config["NUM_FRAMES"]))
-for i in range(config["NUM_FRAMES"]):
-    rep.orchestrator.step(delta_time=0.0)
+    # Creates a new stage
+    if not create_new_stage():
+        carb.log_error("Could not create a new stage, closing the application.")
+        simulation_app.close()
+    stage = get_current_stage()
 
-# Cleanup writer and render products
-writer.detach()
-sdg_camera_render_product.destroy()
+    # Disable capture on play (data generation will be triggered manually)
+    rep.orchestrator.set_capture_on_play(False)
 
-# Wait for the data to be written to disk
-rep.orchestrator.wait_until_complete()
+    # Clear any previous semantic data in the loaded stage
+    for prim in stage.Traverse():
+        remove_all_semantics(prim, False)
 
-while simulation_app.is_running():
-    simulation_app.update()
-simulation_app.close()
+    # Create a ground plane
+    PhysicsContext()
+    ground_plane = GroundPlane(prim_path="/World/GroundPlane", size=10, color=np.array([1., 1., 1.]))
+
+    # Spawn objects: Apple, Avocado and Lime in a random pose.
+    apple_prim = prims.create_prim(
+        prim_path=config["SEMANTIC_OBJECTS"]["Apple"]["prim"],
+        position=(-0.1, -0.05, 0.5),
+        orientation=(1., 0., 0., 0.),
+        scale=config["OBJECTS_SCALE"],
+        usd_path=config["SEMANTIC_OBJECTS"]["Apple"]["url"],
+        semantic_label=config["SEMANTIC_OBJECTS"]["Apple"]["class"],
+    )
+
+    avocado_prim = prims.create_prim(
+        prim_path=config["SEMANTIC_OBJECTS"]["Avocado"]["prim"],
+        position=(0, 0.1, 0.5),
+        orientation=(1., 0., 0., 0.),
+        scale=config["OBJECTS_SCALE"],
+        usd_path=config["SEMANTIC_OBJECTS"]["Avocado"]["url"],
+        semantic_label=config["SEMANTIC_OBJECTS"]["Avocado"]["class"],
+    )
+
+    lime_prim = prims.create_prim(
+        prim_path=config["SEMANTIC_OBJECTS"]["Lime"]["prim"],
+        position=(0.1, -0.05, 0.5),
+        orientation=(1., 0., 0., 0.),
+        scale=config["OBJECTS_SCALE"],
+        usd_path=config["SEMANTIC_OBJECTS"]["Lime"]["url"],
+        semantic_label=config["SEMANTIC_OBJECTS"]["Lime"]["class"],
+    )
+
+    # Create the camera used for the acquisition
+    sdg_camera = rep.create.camera(
+        name=config["SDG_CAMERA"]["name"],
+        position=config["SDG_CAMERA"]["pos"],
+        rotation=config["SDG_CAMERA"]["rot"],
+        focal_length=config["SDG_CAMERA"]["focal_length"],
+        focus_distance=config["SDG_CAMERA"]["focus_distance"],
+        f_stop=config["SDG_CAMERA"]["f_stop"],
+        horizontal_aperture=config["SDG_CAMERA"]["horizontal_aperture"],
+        clipping_range=Gf.Vec2f(*config["SDG_CAMERA"]["clipping_range"]),
+        projection_type=config["SDG_CAMERA"]["projection_type"],
+        count=1,
+    )
+    
+    sdg_camera_render_product = rep.create.render_product(
+        sdg_camera, (config["SDG_CAMERA"]["width"], config["SDG_CAMERA"]["height"]), name="SdgCameraView"
+    )
+    sdg_camera_render_product.hydra_texture.set_updates_enabled(False)
+
+    # Register movement and light randomizations, randomize colors, and attach writer
+    register_move_objects(config, rep)
+    register_lights(config, rep)
+    register_groundplane_colors(rep)
+
+    # Get writer and initialize with config
+    writer = rep.WriterRegistry.get("BasicWriter")
+    writer.initialize(**config["WRITER_CONFIG"])
+
+    # Attach writer to the render product
+    writer.attach(sdg_camera_render_product)
+
+    # Trigger randomization for every frame
+    with rep.trigger.on_frame():
+        rep.randomizer.randomize_distant_light()
+        rep.randomizer.randomize_cylinder_light()
+        rep.randomizer.randomize_sphere_light()
+        rep.randomizer.move_apple()
+        rep.randomizer.move_avocado()
+        rep.randomizer.move_lime()
+        rep.randomizer.randomize_groundplane_colors()
+
+    sdg_camera_render_product.hydra_texture.set_updates_enabled(True)
+
+    # Start the SDG
+    print(f"Running SDG for {config['NUM_FRAMES']} frames")
+    for i in range(config["NUM_FRAMES"]):
+        rep.orchestrator.step(delta_time=0.0)
+
+    # Cleanup writer and render products
+    writer.detach()
+    sdg_camera_render_product.destroy()
+    
+    # Wait for the data to be written to disk                   
+    rep.orchestrator.wait_until_complete()
+
+    while simulation_app.is_running():
+        simulation_app.update()
+    simulation_app.close()
+
+# Argument parsing for command-line inputs
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Load a YAML configuration file for the simulation.")
+    parser.add_argument(
+        "--config_file",
+        type=str,
+        default="/root/isaac_ws/simulation_ws/conf/config.yml",
+        help="Path to the YAML configuration file (default: /root/isaac_ws/simulation_ws/conf/config.yml)"
+    )
+    args = parser.parse_args()
+
+    # Call the main function with parsed arguments
+    main(args)

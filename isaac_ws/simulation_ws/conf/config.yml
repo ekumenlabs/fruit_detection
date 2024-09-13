@@ -1,9 +1,7 @@
-# config.yaml
-
 SIMULATION_APP_CONFIG:
   renderer: RayTracedLighting # Renderer with ray tracing for realistic lighting.
   headless: False # Enable graphics display for visualization.
-  anti_aliasing": FXAA
+  anti_aliasing: FXAA # Fast Approximate Anti-Aliasing (FXAA) for smoother edges and less jaggedness.
 
 # Height levels for each object.
 OBJECTS_Z: [1., 2., 3.]
@@ -33,16 +31,6 @@ OBJECTS_POSE_CONFIG:
   max_pos: [2.0, 2.0, 0.5] # Maximum XYZ position for object placement.
   min_rot: [-180.0, -90.0, -180.0] # Minimum rotation (Euler angles) for objects.
   max_rot: [180.0, 90.0, 180.0] # Maximum rotation (Euler angles) for objects.
-
-# Individual object pose configuration.
-#APPLE_POSE_CONFIG:  # Apple-specific pose configuration, using shared object pose config.
-#  <<: *OBJECTS_POSE_CONFIG  # Inherit the shared OBJECTS_POSE_CONFIG.
-
-#AVOCADO_POSE_CONFIG:  # Avocado-specific pose configuration, using shared object pose config.
-#  <<: *OBJECTS_POSE_CONFIG  # Inherit the shared OBJECTS_POSE_CONFIG.
-
-#LIME_POSE_CONFIG:  # Lime-specific pose configuration, using shared object pose config.
-#  <<: *OBJECTS_POSE_CONFIG  # Inherit the shared OBJECTS_POSE_CONFIG.
 
 OBJECTS_SCALE: [0.1, 0.1, 0.1] # Uniform scaling factor for all objects.
 
