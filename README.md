@@ -16,6 +16,20 @@ We recommend reading this [article](https://docs.omniverse.nvidia.com/isaacsim/l
 
 > **NOTE:** this project is disk savvy, make sure to have tens of GBs (~50GB) available of free disk space.
 
+## Contributing
+
+This projects uses pre-commit hooks for linting. To install and make sure they are run when committing:
+
+```bash
+python3 -m pip install -U pre-commit
+pre-commit install
+```
+
+If you want to run the linters but still not ready to commit you can run:
+
+```bash
+pre-commit run --all-files
+```
 
 # Using the different docker components
 
@@ -32,8 +46,8 @@ The available profiles are:
 - `detection`: loads the detection stack.
 - `visualization`: loads RQt to visualize the input and output image processing.
 - `test_camera`: loads the usb_cam driver that makes a connected webcam to publish. Useful when the Olive Camera is not available.
-- `simulation`: loads the simulation NVidia Isaac Omniverse. 
-- `dataset_gen`: generates a training dataset using NVidia Isaac Omniverse. 
+- `simulation`: loads the simulation NVidia Isaac Omniverse.
+- `dataset_gen`: generates a training dataset using NVidia Isaac Omniverse.
 > TBD
 
 Compound profiles are:
@@ -118,7 +132,7 @@ The following .gif video shows pictures where the ground plane conditions color 
 
 ![Dataset gen](./doc/dataset_gen.gif)
 
-And once it finishes (note the scene does not evolve anymore) check the generated folder under `isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg` where `YYYYMMDDHHMMSS` is the stamp of the dataset creation. 
+And once it finishes (note the scene does not evolve anymore) check the generated folder under `isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg` where `YYYYMMDDHHMMSS` is the stamp of the dataset creation.
 
 
 # FAQs
