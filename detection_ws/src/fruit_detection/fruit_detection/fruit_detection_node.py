@@ -1,3 +1,5 @@
+"""Provides a ros2 detection node for a fasterrcnn_resnet50_fpn model."""
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -10,146 +12,205 @@ from vision_msgs.msg import (
 )
 from cv_bridge import CvBridge
 import cv2
-import numpy as np
 import torch
-import torchvision
 from torchvision import transforms as T
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from torchvision.models.detection.faster_rcnn import (
+    FastRCNNPredictor,
+    fasterrcnn_resnet50_fpn,
+)
 import time
 
-_FRUIT_CATEGORIES={
+_FRUIT_CATEGORIES = {
     0: "background",
     1: "apple",
     2: "avocado",
     3: "lime",
 }
 
+
 def get_transform():
+    """Return a PyTorch transform callable object."""
     transforms = []
     transforms.append(T.ToPILImage())
     transforms.append(T.PILToTensor())
     transforms.append(T.ConvertImageDtype(torch.float))
     return T.Compose(transforms)
 
+
 class FruitDetectionNode(Node):
     """
+    Inference node for fruit detection.
+
     Reads images from /image_raw and publishes another image
     into /proc_image with detections made with a fasterrcnn_resnet50_fpn model.
-    On top of that, it publishes the bounding box of the detections to /detections. 
+    On top of that, it publishes the bounding box of the detections to
+    /detections.
     """
 
-    TARGET_ENCODING="bgr8"
-    TOPIC_QOS_QUEUE_LENGTH=10
-    RECT_COLOR=(0, 0, 255)
-    SCORE_THRESHOLD=0.7
-    LOGGING_THROTTLE=1
+    TARGET_ENCODING = "bgr8"
+    TOPIC_QOS_QUEUE_LENGTH = 10
+    RECT_COLOR = (0, 0, 255)
+    SCORE_THRESHOLD = 0.7
+    LOGGING_THROTTLE = 1
 
     def __init__(self) -> None:
-        """Constructor"""
-        super().__init__('detection_node')
-        self.declare_parameter('model_path', 'model.pth')
-        self.__model_path = self.get_parameter('model_path').get_parameter_value().string_value
+        """Initialize the node."""
+        super().__init__("detection_node")
+        self.declare_parameter("model_path", "model.pth")
+        self.__model_path = (
+            self.get_parameter("model_path").get_parameter_value().string_value
+        )
 
-        self.image_subscription = self.create_subscription(Image, "/image_raw", self.image_callback, FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH)
-        self.image_publisher = self.create_publisher(Image, '/proc_image', FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH)
-        self.detections_publisher = self.create_publisher(Detection2DArray, '/detections', FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH)
+        self.image_subscription = self.create_subscription(
+            Image,
+            "/image_raw",
+            self.image_callback,
+            FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH,
+        )
+        self.image_publisher = self.create_publisher(
+            Image, "/proc_image", FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH
+        )
+        self.detections_publisher = self.create_publisher(
+            Detection2DArray,
+            "/detections",
+            FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH,
+        )
         self.cv_bridge = CvBridge()
-        self.device_str = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device_str = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = torch.device(self.device_str)
         self.load_model()
-        self.get_logger().info(f" device? {self.device_str} version {torch.__version__}")
+        self.get_logger().info(
+            f" device? {self.device_str} version {torch.__version__}"
+        )
         self.ingest_transform = get_transform()
 
     def load_model(self):
-        """Load the torch model"""
-        self.model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights=None)
+        """Load the torch model."""
+        self.model = fasterrcnn_resnet50_fpn(weights=None)
         in_features = self.model.roi_heads.box_predictor.cls_score.in_features
-        self.model.roi_heads.box_predictor = FastRCNNPredictor(in_features, len(_FRUIT_CATEGORIES))
+        self.model.roi_heads.box_predictor = FastRCNNPredictor(
+            in_features, len(_FRUIT_CATEGORIES)
+        )
         self.model = self.model.to(self.device)
-        self.model.load_state_dict(torch.load(self.__model_path, weights_only=True))
+        self.model.load_state_dict(
+            torch.load(
+                self.__model_path,
+                weights_only=True,
+            )
+        )
         self.model.eval()
         self._labels = _FRUIT_CATEGORIES
 
     def image_to_tensor(self, img):
+        """Apply transforms to a cv2 image."""
         transformed_img = self.ingest_transform(img)
         return [transformed_img.to(self.device)]
 
     def cv2_to_torch_frame(self, img):
+        """Prepare cv2 image for inference."""
         return self.image_to_tensor(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
 
     def score_frame(self, frame):
         """
-        function scores each frame of the video and returns results.
+        Score each frame of the video and return results.
+
         :param frame: frame to be infered.
-        :return: labels and coordinates of objects found. 
+        :return: labels and coordinates of objects found.
         """
         with torch.no_grad():
             output = self.model(frame)
             # As we only feed one image, we should get only one output
             output = output[0]
             results = []
-            for i, (box, score, label) in enumerate(zip(output['boxes'], output['scores'], output['labels'])):
+            for i, (box, score, label) in enumerate(
+                zip(output["boxes"], output["scores"], output["labels"])
+            ):
                 if score >= FruitDetectionNode.SCORE_THRESHOLD:
-                    results.append({'box':box,'score':score, 'label':self._labels[label.item()]})
+                    results.append(
+                        {
+                            "box": box,
+                            "score": score,
+                            "label": self._labels[label.item()],
+                        }
+                    )
         return results
-   
+
     def plot_boxes(self, detections, frame):
         """
-        Plots boxes and labels on frame.
+        Plot boxes and labels on frame.
+
         :param detections: inferences made by model
         :param frame: frame on which to  make the plots
         :return: new frame with boxes and labels plotted.
         """
         for detection in detections:
-            row = detection['box']
+            row = detection["box"]
             x1, y1, x2, y2 = int(row[0]), int(row[1]), int(row[2]), int(row[3])
-            cv2.rectangle(frame, (x1, y1), (x2, y2), FruitDetectionNode.RECT_COLOR, 1)
-            cv2.putText(frame, str(detection['label']), (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1)
+            cv2.rectangle(
+                frame,
+                (x1, y1),
+                (x2, y2),
+                FruitDetectionNode.RECT_COLOR,
+                1,
+            )
+            cv2.putText(
+                frame,
+                str(detection["label"]),
+                (x1, y1),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 255, 0),
+                1,
+            )
 
     def detection_to_ros2(self, detections, header):
         """
-        Creates a detection result as if there where multiple classes.
+        Create a detection result as if there where multiple classes.
 
-        Notes: there are multiple values hardcoded. It is expected to evolve the method into
-        something that relates to the actual classes in the future. Also, the score in the
-        hyphotesis.
-        Provided that there is no pose estimation, only the bounding box is given.
+        Notes: there are multiple values hardcoded. It is expected to evolve
+        the method into something that relates to the actual classes in the
+        future. Also, the score in the hyphotesis.
+        Provided that there is no pose estimation, only the bounding box is
+        given.
 
         Args:
         -----
             detections (list[dict]): The list of detections to include.
             header (Header): The header stamp of the message to return.
-        
+
         Returns:
         --------
-            Detection2DArray: The detection array with the mulitple detections when found.
+            Detection2DArray: The detection array with the mulitple detections
+                when found.
         """
         result = Detection2DArray()
         result.header = header
         result.detections = []
         for detection in detections:
-            x1, y1, x2, y2 = detection['box']
+            x1, y1, x2, y2 = detection["box"]
             detection_2d = Detection2D()
             detection_2d.header = header
             bbox = BoundingBox2D()
             bbox.size_x = float(x2 - x1)
             bbox.size_y = float(y2 - y1)
-            bbox.center.theta = 0.
+            bbox.center.theta = 0.0
             bbox.center.position.y = float(y2 - y1) / 2.0
             bbox.center.position.y = float(y2 - y1) / 2.0
             detection_2d.bbox = bbox
             detection_2d.id = detection["label"]
             object_hypothesis_with_pose = ObjectHypothesisWithPose()
             object_hypothesis = ObjectHypothesis()
-            object_hypothesis.class_id = detection['label']
-            object_hypothesis.score = float(detection['score'])
+            object_hypothesis.class_id = detection["label"]
+            object_hypothesis.score = float(detection["score"])
             object_hypothesis_with_pose.hypothesis = object_hypothesis
             detection_2d.results.append(object_hypothesis_with_pose)
             result.detections.append(detection_2d)
         return result
-    
+
     def image_callback(self, msg: Image) -> None:
-        """Image callback.
+        """
+        Image callback.
+
         Produces the detection output together with the smoothed image.
 
         Args:
@@ -157,15 +218,20 @@ class FruitDetectionNode(Node):
             msg (Image): Received image.
         """
         msg_header = msg.header
-        cv_frame = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING)
+        cv_frame = self.cv_bridge.imgmsg_to_cv2(
+            msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING
+        )
         torch_frame = self.cv2_to_torch_frame(cv_frame)
 
         inference_start_time = time.perf_counter()
         detections = self.score_frame(torch_frame)
         inference_end_time = time.perf_counter()
 
-        self.get_logger().info(f'Inference time: {str(inference_end_time - inference_start_time)}',
-            throttle_duration_sec=FruitDetectionNode.LOGGING_THROTTLE)
+        self.get_logger().info(
+            f"Inference time: \
+                {str(inference_end_time - inference_start_time)}",
+            throttle_duration_sec=FruitDetectionNode.LOGGING_THROTTLE,
+        )
 
         self.plot_boxes(detections, cv_frame)
         detections_msg = self.detection_to_ros2(detections, msg_header)
@@ -174,14 +240,14 @@ class FruitDetectionNode(Node):
             self.cv_bridge.cv2_to_imgmsg(
                 cv_frame,
                 encoding=FruitDetectionNode.TARGET_ENCODING,
-                header=msg_header
+                header=msg_header,
             )
         )
         self.detections_publisher.publish(detections_msg)
 
 
 def main(args=None) -> None:
-    """Main function."""
+    """Run the node."""
     rclpy.init(args=args)
     node = FruitDetectionNode()
     rclpy.spin(node)
@@ -189,5 +255,5 @@ def main(args=None) -> None:
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
