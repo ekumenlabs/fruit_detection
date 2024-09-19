@@ -16,6 +16,7 @@
 
 import argparse
 import carb
+from datetime import datetime
 from isaacsim import SimulationApp
 import numpy as np
 import yaml
@@ -239,6 +240,12 @@ def main(args):
         return
 
     # Initialize SimulationApp
+    stamp_str = datetime.now().strftime("%Y%m%d%H%M%S")
+    if "{{ timestamp }}" in config["WRITER_CONFIG"]["output_dir"]:
+        config["WRITER_CONFIG"]["output_dir"] = config["WRITER_CONFIG"][
+            "output_dir"
+        ].replace("{{ timestamp }}", stamp_str)
+
     simulation_app = SimulationApp(
         launch_config=config["SIMULATION_APP_CONFIG"],
     )
