@@ -8,7 +8,7 @@ COPY --link detection_ws/src/fruit_detection/package.xml /root/detection_ws/src/
 
 WORKDIR /root/detection_ws/
 
-RUN apt-get update && \  
+RUN apt-get update && \
     apt-get install python3-pip -y && \
     rosdep update && \
     rosdep install --from-paths src -y --rosdistro=${ROS_DISTRO} && \
