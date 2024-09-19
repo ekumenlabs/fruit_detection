@@ -77,6 +77,8 @@ class FruitDetectionNode(Node):
     RECT_COLOR = (0, 0, 255)
     SCORE_THRESHOLD = 0.7
     LOGGING_THROTTLE = 1
+    MINIMUM_BOX_SIZE_X = 50
+    MINIMUM_BOX_SIZE_Y = 50
 
     def __init__(self) -> None:
         """Initialize the node."""
@@ -85,6 +87,14 @@ class FruitDetectionNode(Node):
         self.declare_parameter("webcam_topic", "/image_raw")
         self.declare_parameter(
             "olive_camera_topic", "/olive/camera/id02/image/compressed"
+        )
+        self.declare_parameter(
+            "bbox_min_x",
+            FruitDetectionNode.MINIMUM_BOX_SIZE_X,
+        )
+        self.declare_parameter(
+            "bbox_min_y",
+            FruitDetectionNode.MINIMUM_BOX_SIZE_Y,
         )
 
         self.__model_path = (
@@ -159,6 +169,19 @@ class FruitDetectionNode(Node):
         """Prepare cv2 image for inference."""
         return self.image_to_tensor(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
 
+    def bbox_has_minimum_size(self, box, min_x, min_y):
+        """
+        Check if a box is bigger than a minimum size.
+
+        :param box: bounding box from inference.
+        :param min_x: minimum horizontal length of the bounding box.
+        :param min_y: minimum vertical length of the bounding box.
+
+        :return: True if the box has the minimum size.
+        """
+        x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        return (min_x <= (x2 - x1)) and (min_y <= (y2 - y1))
+
     def score_frame(self, frame):
         """
         Score each frame of the video and return results.
@@ -179,7 +202,18 @@ class FruitDetectionNode(Node):
             for i, (box, score, label) in enumerate(
                 zip(output["boxes"], output["scores"], output["labels"])
             ):
-                if score >= FruitDetectionNode.SCORE_THRESHOLD:
+                if (
+                    score >= FruitDetectionNode.SCORE_THRESHOLD
+                    and self.bbox_has_minimum_size(
+                        box,
+                        self.get_parameter("bbox_min_x")
+                        .get_parameter_value()
+                        .integer_value,
+                        self.get_parameter("bbox_min_y")
+                        .get_parameter_value()
+                        .integer_value,
+                    )
+                ):
                     results.append(
                         {
                             "box": box,
