@@ -1,16 +1,3 @@
-"""
-Trains a fasterrcnn_resnet50_fpn model.
-
-Permalink to original code:
-https://github.com/NVIDIA-Omniverse/synthetic-data-examples/blob/78622588948e055e27aa8b0ef8494a73855bceeb/end-to-end-workflows/object_detection_fruit/training/code/train.py  # noqa
-Changes:
-  - Modified the amount of labels
-  - Made static_labels part of the dataset class
-  - Removed the epochs option from the args parser and moved it to a constant
-  - Moved some training values to constants
-  - Added some logging
-"""
-
 # SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -41,6 +28,33 @@ Changes:
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+
+# Permalink to original code:
+# https://github.com/NVIDIA-Omniverse/synthetic-data-examples/blob/78622588948e055e27aa8b0ef8494a73855bceeb/end-to-end-workflows/object_detection_fruit/training/code/train.py  # noqa
+# Changes:
+#   - Modified the amount of labels
+#   - Made static_labels part of the dataset class
+#   - Removed the epochs option from the args parser and moved it to a constant
+#   - Moved some training values to constants
+#   - Added some logging
+
+
+# Copyright 2024 Ekumen, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Trains a fasterrcnn_resnet50_fpn model."""
 
 import json
 import numpy as np
