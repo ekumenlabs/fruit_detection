@@ -1,3 +1,4 @@
+---
 services:
   training:
     build:
@@ -6,7 +7,12 @@ services:
       target: training_prod
     container_name: training
     profiles: ["training"]
-    entrypoint: ["python3", "train.py", "-d", "./data", "-o", "./model/model.pth"]
+    entrypoint: ["python3",
+                 "train.py",
+                 "-d",
+                 "./data",
+                 "-o",
+                 "./model/model.pth"]
     volumes:
       - ${DATASET_PATH}:/root/training_ws/data
       - ../model/:/root/training_ws/model
@@ -26,7 +32,14 @@ services:
       target: training_prod
     container_name: training_test
     profiles: ["training_test"]
-    entrypoint: ["python3", "eval.py", "-m", "./model/model.pth", "-d", "./data", "-o", "./model"]
+    entrypoint: ["python3",
+                 "eval.py",
+                 "-m",
+                 "./model/model.pth",
+                 "-d",
+                 "./data",
+                 "-o",
+                 "./model"]
     volumes:
       - ${DATASET_PATH}:/root/training_ws/data
       - ../model/:/root/training_ws/model
