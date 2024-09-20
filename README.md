@@ -194,6 +194,44 @@ docker compose -f docker/docker-compose.yml --profile simulated_pipeline down
 
 There are two parameters (`bbox_min_x` and `bbox_min_y`, both measured in pixels) available in the detection node, that can be used to filter the inferences based on the size of the bounding boxes generated. They can be modified via rqt_gui (Plugins -> Configuration -> Dynamic Reconfigure).
 
+## Bonus track: rosbags
+
+It's always useful to record rosbags to try the system outside the laboratory or to share data among teammates.
+
+1. Build the rosbag profile:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile rosbag build
+```
+
+2. Run the service:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile rosbag up
+```
+
+3. Attach a console to it and source ROS 2 installation:
+
+```bash
+docker exec -it rosbag bash
+source /opt/ros/humble/setup.bash
+```
+
+4. With a running system (see any of the aforementioned run ways), record the Olive Camera:
+
+```bash
+ros2 bag record -s mcap -o my_rosbag /olive/camera/id01/image/compressed
+```
+
+Press Ctrl-C to stop recording.
+
+5. You can try to play it back now:
+
+```bash
+ros2 bag play my_rosbag
+```
+
+
 ## Test
 
 ### Detection stack

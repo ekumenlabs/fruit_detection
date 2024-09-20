@@ -214,6 +214,22 @@ services:
               count: 1
               capabilities:
                 - gpu
+  rosbag:
+    build:
+      context: ..
+      dockerfile: docker/rosbag.dockerfile
+    container_name: rosbag
+    profiles: ["rosbag"]
+    ipc: host
+    network_mode: host
+    stdin_open: true
+    environment:
+      - ROS_DOMAIN_ID=0
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    volumes:
+      - /dev/shm:/dev/shm
+      - ../bag_ws/:/root/bag_ws
+
 volumes:
   isaac_cache:
   isaac_logs:
