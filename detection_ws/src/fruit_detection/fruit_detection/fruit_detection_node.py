@@ -21,6 +21,8 @@ from rclpy.qos import (
     QoSProfile,
     ReliabilityPolicy,
 )
+from rclpy.parameter import Parameter
+from rcl_interfaces.msg import SetParametersResult
 from sensor_msgs.msg import CompressedImage, Image
 from std_msgs.msg import Header
 from vision_msgs.msg import (
@@ -77,6 +79,12 @@ class FruitDetectionNode(Node):
     RECT_COLOR = (0, 0, 255)
     SCORE_THRESHOLD = 0.7
     LOGGING_THROTTLE = 1
+    DEFAULT_BBOX_SIZE_X = 50
+    DEFAULT_BBOX_SIZE_Y = 50
+    MINIMUM_BBOX_SIZE_X = 0
+    MINIMUM_BBOX_SIZE_Y = 0
+    MAXIMUM_BBOX_SIZE_X = 640
+    MAXIMUM_BBOX_SIZE_Y = 480
 
     def __init__(self) -> None:
         """Initialize the node."""
@@ -86,6 +94,16 @@ class FruitDetectionNode(Node):
         self.declare_parameter(
             "olive_camera_topic", "/olive/camera/id02/image/compressed"
         )
+        self.declare_parameter(
+            "bbox_min_x",
+            FruitDetectionNode.DEFAULT_BBOX_SIZE_X,
+        )
+        self.declare_parameter(
+            "bbox_min_y",
+            FruitDetectionNode.DEFAULT_BBOX_SIZE_Y,
+        )
+
+        self.add_on_set_parameters_callback(self.validate_parameters)
 
         self.__model_path = (
             self.get_parameter("model_path").get_parameter_value().string_value
@@ -133,6 +151,34 @@ class FruitDetectionNode(Node):
         self.get_logger().info("ingestion;inference;plot;detection;publish;")
         self.ingest_transform = get_transform()
 
+    def validate_parameters(self, params):
+        """
+        Validate parameter changes.
+
+        :param params: list of parameters.
+
+        :return: SetParametersResult.
+        """
+        parameters_are_valid = True
+        for param in params:
+            if param.name == "bbox_min_x":
+                if param.type_ != Parameter.Type.INTEGER or not (
+                    FruitDetectionNode.MINIMUM_BBOX_SIZE_X
+                    <= param.value
+                    <= FruitDetectionNode.MAXIMUM_BBOX_SIZE_X
+                ):
+                    parameters_are_valid = False
+                    break
+            elif param.name == "bbox_min_y":
+                if param.type_ != Parameter.Type.INTEGER or not (
+                    FruitDetectionNode.MINIMUM_BBOX_SIZE_Y
+                    <= param.value
+                    <= FruitDetectionNode.MAXIMUM_BBOX_SIZE_Y
+                ):
+                    parameters_are_valid = False
+                    break
+        return SetParametersResult(successful=parameters_are_valid)
+
     def load_model(self):
         """Load the torch model."""
         self.model = fasterrcnn_resnet50_fpn(weights=None)
@@ -159,6 +205,19 @@ class FruitDetectionNode(Node):
         """Prepare cv2 image for inference."""
         return self.image_to_tensor(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
 
+    def bbox_has_minimum_size(self, box, min_x, min_y):
+        """
+        Check if a box is bigger than a minimum size.
+
+        :param box: bounding box from inference.
+        :param min_x: minimum horizontal length of the bounding box.
+        :param min_y: minimum vertical length of the bounding box.
+
+        :return: True if the box has the minimum size.
+        """
+        x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        return (min_x <= (x2 - x1)) and (min_y <= (y2 - y1))
+
     def score_frame(self, frame):
         """
         Score each frame of the video and return results.
@@ -179,7 +238,24 @@ class FruitDetectionNode(Node):
             for i, (box, score, label) in enumerate(
                 zip(output["boxes"], output["scores"], output["labels"])
             ):
-                if score >= FruitDetectionNode.SCORE_THRESHOLD:
+                bbox_min_x = (
+                    self.get_parameter("bbox_min_x")
+                    .get_parameter_value()
+                    .integer_value  # Minimum bbox x size
+                )
+                bbox_min_y = (
+                    self.get_parameter("bbox_min_y")
+                    .get_parameter_value()
+                    .integer_value  # Minimum bbox y size
+                )
+                if (
+                    score >= FruitDetectionNode.SCORE_THRESHOLD
+                    and self.bbox_has_minimum_size(
+                        box,
+                        bbox_min_x,
+                        bbox_min_y,
+                    )
+                ):
                     results.append(
                         {
                             "box": box,

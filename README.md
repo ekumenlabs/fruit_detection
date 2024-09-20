@@ -190,6 +190,10 @@ docker compose -f docker/docker-compose.yml --profile simulated_pipeline up
 docker compose -f docker/docker-compose.yml --profile simulated_pipeline down
 ```
 
+### Minimum bounding box tuning
+
+There are two parameters (`bbox_min_x` and `bbox_min_y`, both measured in pixels) available in the detection node, that can be used to filter the inferences based on the size of the bounding boxes generated. They can be modified via rqt_gui (Plugins -> Configuration -> Dynamic Reconfigure).
+
 ## Test
 
 ### Detection stack
