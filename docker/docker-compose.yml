@@ -58,7 +58,10 @@ services:
       dockerfile: docker/detection.dockerfile
       target: detection_prod
     container_name: detection
-    profiles: ["detection", "test_real_pipeline", "simulated_pipeline"]
+    profiles: ["detection",
+               "webcam_pipeline",
+               "simulated_pipeline",
+               "olive_pipeline"]
     ipc: host
     network_mode: host
     stdin_open: true
@@ -95,7 +98,10 @@ services:
       context: ..
       dockerfile: docker/visualization.dockerfile
     container_name: visualization
-    profiles: ["visualization", "test_real_pipeline", "simulated_pipeline"]
+    profiles: ["visualization",
+               "webcam_pipeline",
+               "simulated_pipeline",
+               "olive_pipeline"]
     ipc: host
     network_mode: host
     entrypoint: ["/root/visualization_ws/entrypoint.sh"]
@@ -118,12 +124,12 @@ services:
               count: 1
               capabilities:
                 - gpu
-  test_camera:
+  webcam:
     build:
       context: ..
       dockerfile: docker/camera.dockerfile
-    container_name: test_camera
-    profiles: ["test_camera", "test_real_pipeline"]
+    container_name: webcam
+    profiles: ["webcam", "webcam_pipeline"]
     stdin_open: true
     stop_grace_period: 1s
     privileged: true
