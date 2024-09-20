@@ -278,8 +278,6 @@ class FruitDetectionNode(Node):
             msg (Image): Received image.
         """
         msg_header = msg.header
-
-        ingestion_start_time = time.perf_counter()
         cv_frame = self.cv_bridge.imgmsg_to_cv2(
             msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING
         )
@@ -313,6 +311,7 @@ class FruitDetectionNode(Node):
             msg_header (Header): Received header.
             cv_frame (Image): Received cv image.
         """
+        ingestion_start_time = time.perf_counter()
         torch_frame = self.cv2_to_torch_frame(cv_frame)
         ingestion_end_time = time.perf_counter()
 
