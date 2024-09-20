@@ -134,6 +134,13 @@ The following .gif video shows pictures where the ground plane conditions color 
 
 And once it finishes (note the scene does not evolve anymore) check the generated folder under `isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg` where `YYYYMMDDHHMMSS` is the stamp of the dataset creation.
 
+# Contributing
+
+Issues or PRs are always welcome! Please refer to [CONTRIBUTING](CONTRIBUTING.md) document.
+
+# Code of Conduct
+
+The free software code of conduct fosters an inclusive, respectful community for contributors by promoting collaboration and mutual respect. For more details, refer to the full document [Code of Conduct](CODE_OF_CONDUCT.md).
 
 # FAQs
 
