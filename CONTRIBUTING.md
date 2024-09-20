@@ -49,9 +49,6 @@ Include details about your configuration and environment:
 
 * **Which version of Fruit-Detection are you using?**?
 * **What's the name and version of the OS you're using**?
-* **Are you running Fruit-Detection using the provided docker container?** See [docker](docker/README.md).
-* **Are you running Fruit-Detection in a virtual machine?** If so, which VM software are you using and which operating systems and versions are used for the host and the guest?
-
 
 ### Suggesting Enhancements
 
