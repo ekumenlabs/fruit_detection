@@ -1,0 +1,6 @@
+---
+/**:
+  ros__parameters:
+    model_path: "/root/detection_ws/model/model.pth"
+    webcam_topic: "/image_raw"
+    olive_camera_topic: "/olive/camera/id02/image/compressed"

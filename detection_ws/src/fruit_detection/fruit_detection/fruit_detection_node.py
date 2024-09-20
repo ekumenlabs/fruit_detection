@@ -16,7 +16,13 @@
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from rclpy.qos import (
+    HistoryPolicy,
+    QoSProfile,
+    ReliabilityPolicy,
+)
+from sensor_msgs.msg import CompressedImage, Image
+from std_msgs.msg import Header
 from vision_msgs.msg import (
     BoundingBox2D,
     Detection2D,
@@ -63,6 +69,11 @@ class FruitDetectionNode(Node):
 
     TARGET_ENCODING = "bgr8"
     TOPIC_QOS_QUEUE_LENGTH = 10
+    QOS_PROFILE = QoSProfile(
+        reliability=ReliabilityPolicy.BEST_EFFORT,
+        history=HistoryPolicy.KEEP_LAST,
+        depth=TOPIC_QOS_QUEUE_LENGTH,
+    )
     RECT_COLOR = (0, 0, 255)
     SCORE_THRESHOLD = 0.7
     LOGGING_THROTTLE = 1
@@ -71,16 +82,38 @@ class FruitDetectionNode(Node):
         """Initialize the node."""
         super().__init__("detection_node")
         self.declare_parameter("model_path", "model.pth")
+        self.declare_parameter("webcam_topic", "/image_raw")
+        self.declare_parameter(
+            "olive_camera_topic", "/olive/camera/id02/image/compressed"
+        )
+
         self.__model_path = (
             self.get_parameter("model_path").get_parameter_value().string_value
         )
+        self.__webcam_topic = (
+            self.get_parameter("webcam_topic")
+            .get_parameter_value()
+            .string_value  # noqa: E501
+        )
+        self.__olive_camera_topic = (
+            self.get_parameter("olive_camera_topic")
+            .get_parameter_value()
+            .string_value  # noqa: E501
+        )
 
-        self.image_subscription = self.create_subscription(
+        self.webcam_image_subscription = self.create_subscription(
             Image,
-            "/image_raw",
-            self.image_callback,
+            self.__webcam_topic,
+            self.webcam_image_callback,
             FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH,
         )
+        self.webcam_image_subscription = self.create_subscription(
+            CompressedImage,
+            self.__olive_camera_topic,
+            self.olive_image_callback,
+            FruitDetectionNode.QOS_PROFILE,
+        )
+
         self.image_publisher = self.create_publisher(
             Image, "/proc_image", FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH
         )
@@ -130,8 +163,13 @@ class FruitDetectionNode(Node):
         """
         Score each frame of the video and return results.
 
-        :param frame: frame to be infered.
-        :return: labels and coordinates of objects found.
+        Args:
+        -----
+            frame (cv2.Mat): frame to be infered.
+
+        Returns:
+        --------
+            list[dict] labels and coordinates of objects found.
         """
         with torch.no_grad():
             output = self.model(frame)
@@ -151,13 +189,16 @@ class FruitDetectionNode(Node):
                     )
         return results
 
-    def plot_boxes(self, detections, frame):
+    def plot_boxes(self, detections, frame) -> None:
         """
         Plot boxes and labels on frame.
 
-        :param detections: inferences made by model
-        :param frame: frame on which to  make the plots
-        :return: new frame with boxes and labels plotted.
+        Operations ran on the input frame.
+
+        Args:
+        -----
+            detections (list[dict]): inferences made by model
+            frame (cv2.Mat): frame on which to  make the plots
         """
         for detection in detections:
             row = detection["box"]
@@ -179,7 +220,9 @@ class FruitDetectionNode(Node):
                 1,
             )
 
-    def detection_to_ros2(self, detections, header):
+    def detection_to_ros2(
+        self, detections: list[dict], header: Header
+    ) -> Detection2DArray:
         """
         Create a detection result as if there where multiple classes.
 
@@ -223,11 +266,12 @@ class FruitDetectionNode(Node):
             result.detections.append(detection_2d)
         return result
 
-    def image_callback(self, msg: Image) -> None:
+    def webcam_image_callback(self, msg: Image) -> None:
         """
-        Image callback.
+        Image callback from the webcam.
 
-        Produces the detection output together with the smoothed image.
+        Converts the msg into a header and cv image and forwards
+        to the processing function.
 
         Args:
         -----
@@ -239,6 +283,36 @@ class FruitDetectionNode(Node):
         cv_frame = self.cv_bridge.imgmsg_to_cv2(
             msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING
         )
+        self.image_callback(msg_header, cv_frame)
+
+    def olive_image_callback(self, msg: CompressedImage) -> None:
+        """
+        Image callback from the Olive Camera.
+
+        Converts the msg into a header and cv image and forwards
+        to the processing function.
+
+        Args:
+        -----
+            msg (Image): Received image.
+        """
+        msg_header = msg.header
+        cv_frame = self.cv_bridge.compressed_imgmsg_to_cv2(
+            msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING
+        )
+        self.image_callback(msg_header, cv_frame)
+
+    def image_callback(self, msg_header: Header, cv_frame) -> None:
+        """
+        Image callback.
+
+        Produces the detection output together with the annotated image.
+
+        Args:
+        -----
+            msg_header (Header): Received header.
+            cv_frame (Image): Received cv image.
+        """
         torch_frame = self.cv2_to_torch_frame(cv_frame)
         ingestion_end_time = time.perf_counter()
 
