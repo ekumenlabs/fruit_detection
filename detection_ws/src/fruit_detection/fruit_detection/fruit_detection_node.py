@@ -77,14 +77,13 @@ class FruitDetectionNode(Node):
         depth=TOPIC_QOS_QUEUE_LENGTH,
     )
     RECT_COLOR = (0, 0, 255)
-    SCORE_THRESHOLD = 0.7
     LOGGING_THROTTLE = 1
-    DEFAULT_BBOX_SIZE_X = 50
-    DEFAULT_BBOX_SIZE_Y = 50
     MINIMUM_BBOX_SIZE_X = 0
     MINIMUM_BBOX_SIZE_Y = 0
     MAXIMUM_BBOX_SIZE_X = 640
     MAXIMUM_BBOX_SIZE_Y = 480
+    MINIMUM_SCORE_THRESHOLD = 0.0
+    MAXIMUM_SCORE_THRESHOLD = 1.0
 
     def __init__(self) -> None:
         """Initialize the node."""
@@ -94,14 +93,9 @@ class FruitDetectionNode(Node):
         self.declare_parameter(
             "olive_camera_topic", "/olive/camera/id02/image/compressed"
         )
-        self.declare_parameter(
-            "bbox_min_x",
-            FruitDetectionNode.DEFAULT_BBOX_SIZE_X,
-        )
-        self.declare_parameter(
-            "bbox_min_y",
-            FruitDetectionNode.DEFAULT_BBOX_SIZE_Y,
-        )
+        self.declare_parameter("bbox_min_x", 60)
+        self.declare_parameter("bbox_min_y", 60)
+        self.declare_parameter("score_threshold", 0.9)
 
         self.add_on_set_parameters_callback(self.validate_parameters)
 
@@ -177,6 +171,14 @@ class FruitDetectionNode(Node):
                 ):
                     parameters_are_valid = False
                     break
+            elif param.name == "score_threshold":
+                if param.type_ != Parameter.Type.DOUBLE or not (
+                    FruitDetectionNode.MINIMUM_SCORE_THRESHOLD
+                    <= param.value
+                    <= FruitDetectionNode.MAXIMUM_SCORE_THRESHOLD
+                ):
+                    parameters_are_valid = False
+                    break
         return SetParametersResult(successful=parameters_are_valid)
 
     def load_model(self):
@@ -248,13 +250,13 @@ class FruitDetectionNode(Node):
                     .get_parameter_value()
                     .integer_value  # Minimum bbox y size
                 )
-                if (
-                    score >= FruitDetectionNode.SCORE_THRESHOLD
-                    and self.bbox_has_minimum_size(
-                        box,
-                        bbox_min_x,
-                        bbox_min_y,
-                    )
+                score_threshold = (
+                    self.get_parameter("score_threshold")
+                    .get_parameter_value()
+                    .double_value  # Score threshold
+                )
+                if score >= score_threshold and self.bbox_has_minimum_size(
+                    box, bbox_min_x, bbox_min_y
                 ):
                     results.append(
                         {
