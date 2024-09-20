@@ -96,6 +96,8 @@ class FruitDetectionNode(Node):
         self.get_logger().info(
             f" device? {self.device_str} version {torch.__version__}"
         )
+        # Provides CSV column format for the time measurements.
+        self.get_logger().info("ingestion;inference;plot;detection;publish;")
         self.ingest_transform = get_transform()
 
     def load_model(self):
@@ -232,24 +234,27 @@ class FruitDetectionNode(Node):
             msg (Image): Received image.
         """
         msg_header = msg.header
+
+        ingestion_start_time = time.perf_counter()
         cv_frame = self.cv_bridge.imgmsg_to_cv2(
             msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING
         )
         torch_frame = self.cv2_to_torch_frame(cv_frame)
+        ingestion_end_time = time.perf_counter()
 
         inference_start_time = time.perf_counter()
         detections = self.score_frame(torch_frame)
         inference_end_time = time.perf_counter()
 
-        self.get_logger().info(
-            f"Inference time: \
-                {str(inference_end_time - inference_start_time)}",
-            throttle_duration_sec=FruitDetectionNode.LOGGING_THROTTLE,
-        )
-
+        plot_start_time = time.perf_counter()
         self.plot_boxes(detections, cv_frame)
-        detections_msg = self.detection_to_ros2(detections, msg_header)
+        plot_end_time = time.perf_counter()
 
+        detection_start_time = time.perf_counter()
+        detections_msg = self.detection_to_ros2(detections, msg_header)
+        detection_end_time = time.perf_counter()
+
+        publish_start_time = time.perf_counter()
         self.image_publisher.publish(
             self.cv_bridge.cv2_to_imgmsg(
                 cv_frame,
@@ -258,6 +263,18 @@ class FruitDetectionNode(Node):
             )
         )
         self.detections_publisher.publish(detections_msg)
+        publish_end_time = time.perf_counter()
+
+        log_str = (
+            f"{ingestion_end_time - ingestion_start_time};"
+            f"{inference_end_time - inference_start_time};"
+            f"{plot_end_time-plot_start_time};"
+            f"{detection_end_time-detection_start_time};"
+            f"{publish_end_time-publish_start_time};"
+        )
+        self.get_logger().info(
+            log_str, throttle_duration_sec=FruitDetectionNode.LOGGING_THROTTLE
+        )
 
 
 def main(args=None) -> None:
