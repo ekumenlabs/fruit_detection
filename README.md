@@ -1,5 +1,3 @@
-TODO: not setting the DATASET_PATH environment variable when composing the training profile prevents it from succeding, we need to decide how to solve this issue.
-
 # Fruit detection
 
 # Requisites
@@ -16,7 +14,7 @@ We recommend reading this [article](https://docs.omniverse.nvidia.com/isaacsim/l
 
 > **NOTE:** this project is disk savvy, make sure to have tens of GBs (~50GB) available of free disk space.
 
-## Contributing
+## Pre-commit configuration - contributors only
 
 This projects uses pre-commit hooks for linting. To install and make sure they are run when committing:
 
@@ -31,7 +29,7 @@ If you want to run the linters but still not ready to commit you can run:
 pre-commit run --all-files
 ```
 
-# Using the different docker components
+# Documentation
 
 ## Architecture
 
@@ -45,17 +43,38 @@ The available profiles are:
 - `training`: trains a fasterrcnn_resnet50_fpn model based on a synthetic dataset.
 - `detection`: loads the detection stack.
 - `visualization`: loads RQt to visualize the input and output image processing.
-- `test_camera`: loads the usb_cam driver that makes a connected webcam to publish. Useful when the Olive Camera is not available.
+- `webcam`: loads the usb_cam driver that makes a connected webcam to publish. Useful when the Olive Camera is not available.
 - `simulation`: loads the simulation NVidia Isaac Omniverse.
 - `dataset_gen`: generates a training dataset using NVidia Isaac Omniverse.
-> TBD
 
 Compound profiles are:
 
-- `test_real_pipeline`: loads `test_camera`,`visualization` and `detection`.
+- `olive_pipeline`: loads `visualization` and `detection`, expects the Olive Camera to be connected.
+
+```mermaid
+graph TD
+    A[Olive Camera] --> B[Fruit Detection Node]
+    B[Fruit Detection Node] --> C[RQt Visualization]
+    A[Olive Camera] --> C[RQt Visualization]
+```
+
+- `webcam_pipeline`: loads `webcam`,`visualization` and `detection`.
+
+```mermaid
+graph TD
+    A[Webcam] --> B[Fruit Detection Node]
+    B[Fruit Detection Node] --> C[RQt Visualization]
+    A[Webcam] --> C[RQt Visualization]
+```
+
 - `simulated_pipeline`: loads `simulation`,`visualization` and `detection`.
 
-> TBD
+```mermaid
+graph TD
+    A[NVidia Omniverse] --> B[Fruit Detection Node]
+    B[Fruit Detection Node] --> C[RQt Visualization]
+    A[NVidia Omniverse] --> C[RQt Visualization]
+```
 
 Testing profiles are:
 
@@ -64,17 +83,35 @@ Testing profiles are:
 
 ## Build the images
 
+> TODO (#16): run `export DATASET_PATH=/tmp` and then override it after generating a dataset to bypass this issue.
+
 To build all the docker images:
 
 ```bash
 docker compose -f docker/docker-compose.yml --profile "*" build
 ```
+## Dataset generation
 
-## Training
+It generates a dataset with 300 annotated pictures where many scene conditions are randomized such as lighting and object pose.
 
-To train a model you need a NVidia Omniverse synthetic dataset. You first need to set up the following environment variable:
+To generate a new dataset:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile dataset_gen up
 ```
-export DATASET_PATH=PATH/TO/TRAINING/DATA
+
+The following .gif video shows pictures where the ground plane conditions color is randomized having a better dataset for the simulation.
+
+![Dataset gen](./doc/dataset_gen.gif)
+
+And once it finishes (note the scene does not evolve anymore) check the generated folder under `isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg` where `YYYYMMDDHHMMSS` is the stamp of the dataset creation.
+
+## Training the model
+
+To train a model you need a NVidia Omniverse synthetic dataset built in the previous step. You first need to set up the following environment variable:
+
+```bash
+export DATASET_PATH=$(pwd)/isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg
 ```
 
 Then you can run the training using the training profile:
@@ -95,21 +132,113 @@ This will evaluate every image in the `DATASET_PATH` and generate annotated imag
 
 To run the system you need to define which profile(s) to run. You can pile profiles by adding them one after the other to have a custom bring up of the system (e.g.`--profile detection --profile visualization`).
 
-To load the test (camera) real system, you can:
+### Running olive_pipeline
+
+To load the system with the Olive Camera, detection and the visualization in RQt, you can do the following:
+
+1. Connect the camera to the USB port of your computer.
+
+2. Assuming you have already built a detection model, run the following command:
 
 ```bash
-docker compose -f docker/docker-compose.yml --profile test_real_pipeline up
+docker compose -f docker/docker-compose.yml --profile olive_pipeline up
 ```
 
-To stop the system you can Ctrl-C or from another terminal call:
+3. Verify you can see in the camera input and the processed images in RQt.
+
+4. To stop the system you can Ctrl-C or from another terminal call:
 
 ```bash
-docker compose -f docker/docker-compose.yml --profile test_real_pipeline down
+docker compose -f docker/docker-compose.yml --profile olive_pipeline down
 ```
 
-### Running test_real_pipeline
+### Running webcam_pipeline
 
-For running this pipeline is needed to have a trained model (.pth file) on the `model` folder. By default, the detection service will try to load a file called `model.pth`, but this can be override by changing the `model_path` parameter from `detection_ws/src/detection/launch/detection.launch.py`.
+To load the system with a webcam, detection and the visualization in RQt, you can do the following:
+
+1. Connect the camera to your computer or make sure the integrated webcam is working on your laptop.
+
+2. Assuming you have already built a detection model, run the following command:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile webcam_pipeline up
+```
+
+3. Verify you can see in the camera input and the processed images in RQt.
+
+4. To stop the system you can Ctrl-C or from another terminal call:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile webcam_pipeline down
+```
+
+### Running simulated_pipeline
+
+To load the system with the simulation, detection and the visualization in RQt, you can do the following:
+
+1. Assuming you have already built a detection model, run the following command:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile simulated_pipeline up
+```
+
+3. Verify you can see in the camera input and the processed images in RQt as well as having the simulator window up.
+
+4. To stop the system you can Ctrl-C or from another terminal call:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile simulated_pipeline down
+```
+
+### Parameter tuning
+
+The following detection node parameters are exposed and can be modified via rqt_gui when running any pipeline:
+
+#### Minimum bounding box
+
+The two parameters `bbox_min_x` and `bbox_min_y` are both measured in pixels. `bbox_min_x` can take values between 0 and 640, and `bbox_min_y` can take values between 0 and 480. They can be used to filter the inferences based on the size of the bounding boxes generated.
+
+#### Score threshold
+
+The parameter `score_threshold` takes values between 0.0 and 1.0. It can be used to filter inferences based on their confidence values.
+
+## Bonus track: rosbags
+
+It's always useful to record rosbags to try the system outside the laboratory or to share data among teammates.
+
+1. Build the rosbag profile:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile rosbag build
+```
+
+2. Run the service:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile rosbag up
+```
+
+3. Attach a console to it and source ROS 2 installation:
+
+```bash
+docker exec -it rosbag bash
+source /opt/ros/humble/setup.bash
+```
+
+4. With a running system (see any of the aforementioned run ways), record the Olive Camera:
+
+```bash
+ros2 bag record -s mcap -o my_rosbag /olive/camera/id01/image/compressed
+```
+
+Press Ctrl-C to stop recording.
+
+5. You can try to play it back now:
+
+```bash
+ros2 bag play my_rosbag
+```
+
 
 ## Test
 
@@ -118,21 +247,6 @@ For running this pipeline is needed to have a trained model (.pth file) on the `
 ```bash
 docker compose -f docker/docker-compose.yml --profile detection_test build
 ```
-
-## Dataset generation
-
-It generates a dataset with 100 annotated pictures where the lighting conditions and the fruit pose is randomized.
-
-To generate a new dataset:
-
-```bash
-docker compose -f docker/docker-compose.yml --profile dataset_gen up
-```
-The following .gif video shows pictures where the ground plane conditions color is randomized having a better dataset for the simulation.
-
-![Dataset gen](./doc/dataset_gen.gif)
-
-And once it finishes (note the scene does not evolve anymore) check the generated folder under `isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg` where `YYYYMMDDHHMMSS` is the stamp of the dataset creation.
 
 # Contributing
 

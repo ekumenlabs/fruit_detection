@@ -16,7 +16,15 @@
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from rclpy.qos import (
+    HistoryPolicy,
+    QoSProfile,
+    ReliabilityPolicy,
+)
+from rclpy.parameter import Parameter
+from rcl_interfaces.msg import SetParametersResult
+from sensor_msgs.msg import CompressedImage, Image
+from std_msgs.msg import Header
 from vision_msgs.msg import (
     BoundingBox2D,
     Detection2D,
@@ -63,24 +71,61 @@ class FruitDetectionNode(Node):
 
     TARGET_ENCODING = "bgr8"
     TOPIC_QOS_QUEUE_LENGTH = 10
+    QOS_PROFILE = QoSProfile(
+        reliability=ReliabilityPolicy.BEST_EFFORT,
+        history=HistoryPolicy.KEEP_LAST,
+        depth=TOPIC_QOS_QUEUE_LENGTH,
+    )
     RECT_COLOR = (0, 0, 255)
-    SCORE_THRESHOLD = 0.7
     LOGGING_THROTTLE = 1
+    MINIMUM_BBOX_SIZE_X = 0
+    MINIMUM_BBOX_SIZE_Y = 0
+    MAXIMUM_BBOX_SIZE_X = 640
+    MAXIMUM_BBOX_SIZE_Y = 480
+    MINIMUM_SCORE_THRESHOLD = 0.0
+    MAXIMUM_SCORE_THRESHOLD = 1.0
 
     def __init__(self) -> None:
         """Initialize the node."""
         super().__init__("detection_node")
         self.declare_parameter("model_path", "model.pth")
+        self.declare_parameter("webcam_topic", "/image_raw")
+        self.declare_parameter(
+            "olive_camera_topic", "/olive/camera/id02/image/compressed"
+        )
+        self.declare_parameter("bbox_min_x", 60)
+        self.declare_parameter("bbox_min_y", 60)
+        self.declare_parameter("score_threshold", 0.9)
+
+        self.add_on_set_parameters_callback(self.validate_parameters)
+
         self.__model_path = (
             self.get_parameter("model_path").get_parameter_value().string_value
         )
+        self.__webcam_topic = (
+            self.get_parameter("webcam_topic")
+            .get_parameter_value()
+            .string_value  # noqa: E501
+        )
+        self.__olive_camera_topic = (
+            self.get_parameter("olive_camera_topic")
+            .get_parameter_value()
+            .string_value  # noqa: E501
+        )
 
-        self.image_subscription = self.create_subscription(
+        self.webcam_image_subscription = self.create_subscription(
             Image,
-            "/image_raw",
-            self.image_callback,
+            self.__webcam_topic,
+            self.webcam_image_callback,
             FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH,
         )
+        self.webcam_image_subscription = self.create_subscription(
+            CompressedImage,
+            self.__olive_camera_topic,
+            self.olive_image_callback,
+            FruitDetectionNode.QOS_PROFILE,
+        )
+
         self.image_publisher = self.create_publisher(
             Image, "/proc_image", FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH
         )
@@ -96,7 +141,45 @@ class FruitDetectionNode(Node):
         self.get_logger().info(
             f" device? {self.device_str} version {torch.__version__}"
         )
+        # Provides CSV column format for the time measurements.
+        self.get_logger().info("ingestion;inference;plot;detection;publish;")
         self.ingest_transform = get_transform()
+
+    def validate_parameters(self, params):
+        """
+        Validate parameter changes.
+
+        :param params: list of parameters.
+
+        :return: SetParametersResult.
+        """
+        parameters_are_valid = True
+        for param in params:
+            if param.name == "bbox_min_x":
+                if param.type_ != Parameter.Type.INTEGER or not (
+                    FruitDetectionNode.MINIMUM_BBOX_SIZE_X
+                    <= param.value
+                    <= FruitDetectionNode.MAXIMUM_BBOX_SIZE_X
+                ):
+                    parameters_are_valid = False
+                    break
+            elif param.name == "bbox_min_y":
+                if param.type_ != Parameter.Type.INTEGER or not (
+                    FruitDetectionNode.MINIMUM_BBOX_SIZE_Y
+                    <= param.value
+                    <= FruitDetectionNode.MAXIMUM_BBOX_SIZE_Y
+                ):
+                    parameters_are_valid = False
+                    break
+            elif param.name == "score_threshold":
+                if param.type_ != Parameter.Type.DOUBLE or not (
+                    FruitDetectionNode.MINIMUM_SCORE_THRESHOLD
+                    <= param.value
+                    <= FruitDetectionNode.MAXIMUM_SCORE_THRESHOLD
+                ):
+                    parameters_are_valid = False
+                    break
+        return SetParametersResult(successful=parameters_are_valid)
 
     def load_model(self):
         """Load the torch model."""
@@ -124,12 +207,30 @@ class FruitDetectionNode(Node):
         """Prepare cv2 image for inference."""
         return self.image_to_tensor(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
 
+    def bbox_has_minimum_size(self, box, min_x, min_y):
+        """
+        Check if a box is bigger than a minimum size.
+
+        :param box: bounding box from inference.
+        :param min_x: minimum horizontal length of the bounding box.
+        :param min_y: minimum vertical length of the bounding box.
+
+        :return: True if the box has the minimum size.
+        """
+        x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
+        return (min_x <= (x2 - x1)) and (min_y <= (y2 - y1))
+
     def score_frame(self, frame):
         """
         Score each frame of the video and return results.
 
-        :param frame: frame to be infered.
-        :return: labels and coordinates of objects found.
+        Args:
+        -----
+            frame (cv2.Mat): frame to be infered.
+
+        Returns:
+        --------
+            list[dict] labels and coordinates of objects found.
         """
         with torch.no_grad():
             output = self.model(frame)
@@ -139,7 +240,24 @@ class FruitDetectionNode(Node):
             for i, (box, score, label) in enumerate(
                 zip(output["boxes"], output["scores"], output["labels"])
             ):
-                if score >= FruitDetectionNode.SCORE_THRESHOLD:
+                bbox_min_x = (
+                    self.get_parameter("bbox_min_x")
+                    .get_parameter_value()
+                    .integer_value  # Minimum bbox x size
+                )
+                bbox_min_y = (
+                    self.get_parameter("bbox_min_y")
+                    .get_parameter_value()
+                    .integer_value  # Minimum bbox y size
+                )
+                score_threshold = (
+                    self.get_parameter("score_threshold")
+                    .get_parameter_value()
+                    .double_value  # Score threshold
+                )
+                if score >= score_threshold and self.bbox_has_minimum_size(
+                    box, bbox_min_x, bbox_min_y
+                ):
                     results.append(
                         {
                             "box": box,
@@ -149,13 +267,16 @@ class FruitDetectionNode(Node):
                     )
         return results
 
-    def plot_boxes(self, detections, frame):
+    def plot_boxes(self, detections, frame) -> None:
         """
         Plot boxes and labels on frame.
 
-        :param detections: inferences made by model
-        :param frame: frame on which to  make the plots
-        :return: new frame with boxes and labels plotted.
+        Operations ran on the input frame.
+
+        Args:
+        -----
+            detections (list[dict]): inferences made by model
+            frame (cv2.Mat): frame on which to  make the plots
         """
         for detection in detections:
             row = detection["box"]
@@ -177,7 +298,9 @@ class FruitDetectionNode(Node):
                 1,
             )
 
-    def detection_to_ros2(self, detections, header):
+    def detection_to_ros2(
+        self, detections: list[dict], header: Header
+    ) -> Detection2DArray:
         """
         Create a detection result as if there where multiple classes.
 
@@ -221,11 +344,12 @@ class FruitDetectionNode(Node):
             result.detections.append(detection_2d)
         return result
 
-    def image_callback(self, msg: Image) -> None:
+    def webcam_image_callback(self, msg: Image) -> None:
         """
-        Image callback.
+        Image callback from the webcam.
 
-        Produces the detection output together with the smoothed image.
+        Converts the msg into a header and cv image and forwards
+        to the processing function.
 
         Args:
         -----
@@ -235,21 +359,53 @@ class FruitDetectionNode(Node):
         cv_frame = self.cv_bridge.imgmsg_to_cv2(
             msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING
         )
+        self.image_callback(msg_header, cv_frame)
+
+    def olive_image_callback(self, msg: CompressedImage) -> None:
+        """
+        Image callback from the Olive Camera.
+
+        Converts the msg into a header and cv image and forwards
+        to the processing function.
+
+        Args:
+        -----
+            msg (Image): Received image.
+        """
+        msg_header = msg.header
+        cv_frame = self.cv_bridge.compressed_imgmsg_to_cv2(
+            msg, desired_encoding=FruitDetectionNode.TARGET_ENCODING
+        )
+        self.image_callback(msg_header, cv_frame)
+
+    def image_callback(self, msg_header: Header, cv_frame) -> None:
+        """
+        Image callback.
+
+        Produces the detection output together with the annotated image.
+
+        Args:
+        -----
+            msg_header (Header): Received header.
+            cv_frame (Image): Received cv image.
+        """
+        ingestion_start_time = time.perf_counter()
         torch_frame = self.cv2_to_torch_frame(cv_frame)
+        ingestion_end_time = time.perf_counter()
 
         inference_start_time = time.perf_counter()
         detections = self.score_frame(torch_frame)
         inference_end_time = time.perf_counter()
 
-        self.get_logger().info(
-            f"Inference time: \
-                {str(inference_end_time - inference_start_time)}",
-            throttle_duration_sec=FruitDetectionNode.LOGGING_THROTTLE,
-        )
-
+        plot_start_time = time.perf_counter()
         self.plot_boxes(detections, cv_frame)
-        detections_msg = self.detection_to_ros2(detections, msg_header)
+        plot_end_time = time.perf_counter()
 
+        detection_start_time = time.perf_counter()
+        detections_msg = self.detection_to_ros2(detections, msg_header)
+        detection_end_time = time.perf_counter()
+
+        publish_start_time = time.perf_counter()
         self.image_publisher.publish(
             self.cv_bridge.cv2_to_imgmsg(
                 cv_frame,
@@ -258,6 +414,18 @@ class FruitDetectionNode(Node):
             )
         )
         self.detections_publisher.publish(detections_msg)
+        publish_end_time = time.perf_counter()
+
+        log_str = (
+            f"{ingestion_end_time - ingestion_start_time};"
+            f"{inference_end_time - inference_start_time};"
+            f"{plot_end_time-plot_start_time};"
+            f"{detection_end_time-detection_start_time};"
+            f"{publish_end_time-publish_start_time};"
+        )
+        self.get_logger().info(
+            log_str, throttle_duration_sec=FruitDetectionNode.LOGGING_THROTTLE
+        )
 
 
 def main(args=None) -> None:

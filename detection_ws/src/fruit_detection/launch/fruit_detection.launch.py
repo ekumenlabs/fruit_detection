@@ -13,7 +13,8 @@
 # limitations under the License.
 
 """Launch the fruit detection node."""
-
+import os
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
@@ -25,11 +26,15 @@ def generate_launch_description() -> LaunchDescription:
     Returns:
         LaunchDescription: With just the fruit_detection_node.
     """
+    params_filepath = os.path.join(
+        get_package_share_directory("fruit_detection"), "config", "params.yml"
+    )
+    print(params_filepath)
     ld = LaunchDescription()
     fruit_detection_node = Node(
         package="fruit_detection",
         executable="fruit_detection_node",
-        parameters=[{"model_path": "/root/detection_ws/model/model.pth"}],
+        parameters=[params_filepath],
     )
     ld.add_action(fruit_detection_node)
     return ld
