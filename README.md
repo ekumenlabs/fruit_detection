@@ -259,3 +259,11 @@ Your good old friend `docker system prune` and the more agressive `docker system
 ```bash
 xhost +si:localuser:root
 ```
+
+3. Running the NVidia Omniverse together with Google Chrome yields errors when opening the simulator. What do I do?
+
+We faced some situations in which precedence of access to the GPU yields to race conditions between these two programs. One possible solution is to do the following:
+
+- Close all Google Chrome related processes.
+- Try to open the simulator using one of the provided instructions in the readme.
+- Verify that you can open the simulator, otherwise, perhaps you need to reboot your system :/ and try again.
