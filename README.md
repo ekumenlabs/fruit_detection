@@ -248,6 +248,14 @@ ros2 bag play my_rosbag
 docker compose -f docker/docker-compose.yml --profile detection_test build
 ```
 
+# Contributing
+
+Issues or PRs are always welcome! Please refer to [CONTRIBUTING](CONTRIBUTING.md) document.
+
+# Code of Conduct
+
+The free software code of conduct fosters an inclusive, respectful community for contributors by promoting collaboration and mutual respect. For more details, refer to the full document [Code of Conduct](CODE_OF_CONDUCT.md).
+
 # FAQs
 
 1. How do I clean up all the docker resources?
