@@ -83,13 +83,19 @@ Testing profiles are:
 
 ## Build the images
 
-> TODO (#16): run `export DATASET_PATH=/tmp` and then override it after generating a dataset to bypass this issue.
-
 To build all the docker images:
 
 ```bash
 docker compose -f docker/docker-compose.yml --profile "*" build
 ```
+
+> **NOTE:** there will be a warning as follows, we will take care of that environment variable later on.
+
+```bash
+WARN[0000] The "DATASET_NAME" variable is not set. Defaulting to a blank string.
+WARN[0000] The "DATASET_NAME" variable is not set. Defaulting to a blank string.
+```
+
 ## Dataset generation
 
 It generates a dataset with 300 annotated pictures where many scene conditions are randomized such as lighting and object pose.
@@ -111,7 +117,7 @@ And once it finishes (note the scene does not evolve anymore) check the generate
 To train a model you need a NVidia Omniverse synthetic dataset built in the previous step. You first need to set up the following environment variable:
 
 ```bash
-export DATASET_PATH=$(pwd)/isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg
+export DATASET_NAME=YYYYMMDDHHMMSS_out_fruit_sdg
 ```
 
 Then you can run the training using the training profile:
@@ -126,7 +132,7 @@ After the training ends, a `model.pth` file will be available inside `model`. Ad
 docker compose -f docker/docker-compose.yml --profile training_test up
 ```
 
-This will evaluate every image in the `DATASET_PATH` and generate annotated images in the `model` folder.
+This will evaluate every image in the `DATASET_NAME` and generate annotated images in the `model` folder.
 
 ## Run
 

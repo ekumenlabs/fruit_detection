@@ -14,7 +14,7 @@ services:
                  "-o",
                  "./model/model.pth"]
     volumes:
-      - ${DATASET_PATH}:/root/training_ws/data
+      - ../isaac_ws/datasets/${DATASET_NAME}:/root/training_ws/data
       - ../model/:/root/training_ws/model
       - torch_cache:/root/.cache/torch
     deploy:
@@ -41,7 +41,7 @@ services:
                  "-o",
                  "./model"]
     volumes:
-      - ${DATASET_PATH}:/root/training_ws/data
+      - ../isaac_ws/datasets/${DATASET_NAME}:/root/training_ws/data
       - ../model/:/root/training_ws/model
       - torch_cache:/root/.cache/torch
     deploy:
@@ -158,7 +158,6 @@ services:
       - DISPLAY
       - QT_X11_NO_MITSHM=1
       - XAUTHORITY=/tmp/.docker.xauth
-      - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/isaac-sim/exts/omni.isaac.ros2_bridge/humble/lib
       - ROS_DISTRO=humble
       - ROS_DOMAIN_ID=0
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
@@ -194,7 +193,6 @@ services:
       - DISPLAY
       - QT_X11_NO_MITSHM=1
       - XAUTHORITY=/tmp/.docker.xauth
-      - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/isaac-sim/exts/omni.isaac.ros2_bridge/humble/lib
       - ROS_DISTRO=humble
       - ROS_DOMAIN_ID=0
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
