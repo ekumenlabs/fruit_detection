@@ -16,6 +16,7 @@
 
 SIM_SCRIPT_PATH="/root/isaac_ws/simulation_ws/scripts/launch_sim.py"
 SDG_SCRIPT_PATH="/root/isaac_ws/simulation_ws/scripts/launch_sdg.py"
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/isaac-sim/exts/omni.isaac.ros2_bridge/humble/lib
 
 SCRIPT_PATH=$(case "${MODE}" in
     "SIM") echo "${SIM_SCRIPT_PATH}" ;;
@@ -24,5 +25,7 @@ SCRIPT_PATH=$(case "${MODE}" in
 esac)
 
 cd /isaac-sim
+
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
 
 ./python.sh ${SCRIPT_PATH}
