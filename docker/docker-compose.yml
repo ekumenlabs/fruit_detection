@@ -14,7 +14,7 @@ services:
                  "-o",
                  "./model/model.pth"]
     volumes:
-      - ${DATASET_PATH}:/root/training_ws/data
+      - ../isaac_ws/datasets/${DATASET_NAME}:/root/training_ws/data
       - ../model/:/root/training_ws/model
       - torch_cache:/root/.cache/torch
     deploy:
@@ -41,7 +41,7 @@ services:
                  "-o",
                  "./model"]
     volumes:
-      - ${DATASET_PATH}:/root/training_ws/data
+      - ../isaac_ws/datasets/${DATASET_NAME}:/root/training_ws/data
       - ../model/:/root/training_ws/model
       - torch_cache:/root/.cache/torch
     deploy:
