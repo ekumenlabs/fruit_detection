@@ -17,6 +17,7 @@ services:
       - ../isaac_ws/datasets/${DATASET_NAME}:/root/training_ws/data
       - ../model/:/root/training_ws/model
       - torch_cache:/root/.cache/torch
+      - ../training_ws/runs/:/root/training_ws/runs
     deploy:
       resources:
         reservations:
@@ -52,6 +53,17 @@ services:
               count: 1
               capabilities:
                 - gpu
+  training_log_visualization:
+    build:
+      context: ..
+      dockerfile: docker/training.dockerfile
+      target: training_prod
+    container_name: training_vis
+    profiles: ["training_vis"]
+    entrypoint: ["tensorboard", "--logdir=/root/training_ws/runs/"]
+    volumes:
+      - ../training_ws/runs:/root/training_ws/runs
+    network_mode: host
   detection:
     build:
       context: ..

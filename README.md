@@ -134,6 +134,10 @@ docker compose -f docker/docker-compose.yml --profile training_test up
 
 This will evaluate every image in the `DATASET_NAME` and generate annotated images in the `model` folder.
 
+### Training logs visualization
+
+The logs generated when training a model are stored in the `training_ws/runs` folder and they can be visualized using the profile `training_vis`. This profile runs Tensorboard over `localhost:6006`, and can be accessed via a web browser.
+
 ## Run
 
 To run the system you need to define which profile(s) to run. You can pile profiles by adding them one after the other to have a custom bring up of the system (e.g.`--profile detection --profile visualization`).
