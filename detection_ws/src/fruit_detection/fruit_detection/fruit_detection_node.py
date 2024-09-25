@@ -70,14 +70,19 @@ class FruitDetectionNode(Node):
     """
 
     TARGET_ENCODING = "bgr8"
-    TOPIC_QOS_QUEUE_LENGTH = 10
-    QOS_PROFILE = QoSProfile(
-        reliability=ReliabilityPolicy.BEST_EFFORT,
+    TOPIC_QOS_QUEUE_LENGTH = 2
+    OLIVE_CAMERA_QOS_PROFILE = QoSProfile(
+        reliability=ReliabilityPolicy.RELIABLE,
+        history=HistoryPolicy.KEEP_LAST,
+        depth=TOPIC_QOS_QUEUE_LENGTH,
+    )
+    PROC_QOS_PROFILE = QoSProfile(
+        reliability=ReliabilityPolicy.RELIABLE,
         history=HistoryPolicy.KEEP_LAST,
         depth=TOPIC_QOS_QUEUE_LENGTH,
     )
     RECT_COLOR = (0, 0, 255)
-    LOGGING_THROTTLE = 1
+    LOGGING_THROTTLE = 1.0
     MINIMUM_BBOX_SIZE_X = 0
     MINIMUM_BBOX_SIZE_Y = 0
     MAXIMUM_BBOX_SIZE_X = 640
@@ -91,7 +96,7 @@ class FruitDetectionNode(Node):
         self.declare_parameter("model_path", "model.pth")
         self.declare_parameter("webcam_topic", "/image_raw")
         self.declare_parameter(
-            "olive_camera_topic", "/olive/camera/id02/image/compressed"
+            "olive_camera_topic", "/olive/camera/id01/image/compressed"
         )
         self.declare_parameter("bbox_min_x", 60)
         self.declare_parameter("bbox_min_y", 60)
@@ -119,20 +124,20 @@ class FruitDetectionNode(Node):
             self.webcam_image_callback,
             FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH,
         )
-        self.webcam_image_subscription = self.create_subscription(
+        self.olive_camera_image_subscription = self.create_subscription(
             CompressedImage,
             self.__olive_camera_topic,
             self.olive_image_callback,
-            FruitDetectionNode.QOS_PROFILE,
+            FruitDetectionNode.OLIVE_CAMERA_QOS_PROFILE,
         )
 
         self.image_publisher = self.create_publisher(
-            Image, "/proc_image", FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH
+            Image, "/proc_image", FruitDetectionNode.PROC_QOS_PROFILE
         )
         self.detections_publisher = self.create_publisher(
             Detection2DArray,
             "/detections",
-            FruitDetectionNode.TOPIC_QOS_QUEUE_LENGTH,
+            FruitDetectionNode.PROC_QOS_PROFILE,
         )
         self.cv_bridge = CvBridge()
         self.device_str = "cuda" if torch.cuda.is_available() else "cpu"
