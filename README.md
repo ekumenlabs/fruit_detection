@@ -132,7 +132,17 @@ After the training ends, a `model.pth` file will be available inside `model`. Ad
 docker compose -f docker/docker-compose.yml --profile training_test up
 ```
 
-This will evaluate every image in the `DATASET_NAME` and generate annotated images in the `model` folder.
+This will evaluate every image in the `DATASET_NAME` and generate annotated images in the `model/test_output` folder.
+
+### Training logs visualization
+
+The logs generated when training a model are stored in the `model/runs` folder and they can be visualized using the profile `training_vis`. This profile runs Tensorboard over `localhost:6006`, and can be accessed via a web browser. To run the Tensorboard server, execute:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile training_vis up
+```
+
+![Tensorboard dashboard](./doc/tensorboard.png)
 
 ## Run
 

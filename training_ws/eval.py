@@ -212,6 +212,8 @@ NMS_THRESHOLD = 0.05
 def main():
     """Run inference on dataset and store images with bounding boxes."""
     options, args = parse_input()
+    if not os.path.exists(options.output_folder):
+        os.makedirs(options.output_folder)
     dataset = FruitDataset(options.data_dir, get_transform())
 
     validloader = torch.utils.data.DataLoader(

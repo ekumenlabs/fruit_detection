@@ -230,14 +230,17 @@ def main():
     options, args = parse_input()
     dataset = FruitDataset(options.data_dir, get_transform(train=True))
     train_size = int(len(dataset) * TRAINING_PARTITION_RATIO)
-    unused_size = len(dataset) - train_size
+    valid_size = len(dataset) - train_size
 
-    train, unused = torch.utils.data.random_split(
+    train, valid = torch.utils.data.random_split(
         dataset,
-        [train_size, unused_size],
+        [train_size, valid_size],
     )
     train_loader = torch.utils.data.DataLoader(
         train, batch_size=1, shuffle=True, num_workers=0, collate_fn=collate_fn
+    )
+    valid_loader = torch.utils.data.DataLoader(
+        valid, batch_size=1, shuffle=True, num_workers=0, collate_fn=collate_fn
     )
 
     device = None
@@ -268,12 +271,25 @@ def main():
             ]  # Format the annotations for model consumption
             loss_dict = model(imgs, annotations)
             losses = sum(loss for loss in loss_dict.values())
-            writer.add_scalar("Loss/train", losses, epoch)
+            writer.add_scalar("Loss/Train", losses, epoch)
 
             losses.backward()
             optimizer.step()
 
             print(f"Iteration: {i}/{len_dataloader}, Loss: {losses}")
+
+        loss_sum = 0
+        for imgs, annotations in valid_loader:
+            imgs = list(img.to(device) for img in imgs)
+            annotations = [
+                {k: v.to(device) for k, v in t.items()} for t in annotations
+            ]  # Format the annotations for model consumption
+            loss_dict = model(imgs, annotations)
+            losses = sum(loss for loss in loss_dict.values())
+            loss_sum = loss_sum + losses.item()
+        avg_loss = loss_sum / len(valid_loader)
+        print(f"Epoch: {epoch}, Validation loss (average): {avg_loss}")
+        writer.add_scalar("Loss/Validation", avg_loss, epoch)
 
     writer.close()
     torch.save(model.state_dict(), options.output_file)
