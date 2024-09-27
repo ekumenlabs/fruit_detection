@@ -145,7 +145,7 @@ def Xform "World"
     {
         quatf xformOp:orient = (1, 0, 0, 0)
         float3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:scale:unitsResolve = (0.01, 0.01, 0.01)
+        double3 xformOp:scale:unitsResolve = (0.02, 0.02, 0.02)
         double3 xformOp:translate = (-0.1, -0.05, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:scale:unitsResolve"]
     }
@@ -156,7 +156,7 @@ def Xform "World"
     {
         quatf xformOp:orient = (1, 0, 0, 0)
         float3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:scale:unitsResolve = (0.009999999776482582, 0.009999999776482582, 0.009999999776482582)
+        double3 xformOp:scale:unitsResolve = (0.02, 0.02, 0.02)
         double3 xformOp:translate = (0, 0.1, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:scale:unitsResolve"]
     }
@@ -167,7 +167,7 @@ def Xform "World"
     {
         quatf xformOp:orient = (1, 0, 0, 0)
         float3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:scale:unitsResolve = (0.009999999776482582, 0.009999999776482582, 0.009999999776482582)
+        double3 xformOp:scale:unitsResolve = (0.02, 0.02, 0.02)
         double3 xformOp:translate = (0.1, -0.05, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:scale:unitsResolve"]
     }
@@ -176,19 +176,19 @@ def Xform "World"
     {
         quatd xformOp:orient = (1, 0, 0, 0)
         double3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:translate = (0, 0, 0.5)
+        double3 xformOp:translate = (0, 0, 0.445)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
         def Camera "olive_camera"
         {
             float2 clippingRange = (0.01, 10000000)
-            float focalLength = 2.1
-            float focusDistance = 5.5
-            float fStop = 200
+            float focalLength = 2.8
+            float focusDistance = 5.0
+            float fStop = 140
             float fthetaCx = 320
             float fthetaCy = 240
             float fthetaHeight = 480
-            float fthetaMaxFov = 135
+            float fthetaMaxFov = 90
             float fthetaPolyB = 0
             float fthetaPolyD = 0
             float fthetaWidth = 640

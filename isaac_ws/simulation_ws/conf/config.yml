@@ -34,10 +34,9 @@ OBJECTS_POSE_CONFIG:
   min_rot: [-180.0, -90.0, -180.0]  # Minimum rotation (Euler angles) for objects.
   max_rot: [180.0, 90.0, 180.0]  # Maximum rotation (Euler angles) for objects.
 
-OBJECTS_SCALE: [0.1, 0.1, 0.1]  # Uniform scaling factor for all objects.
+OBJECTS_SCALE: [0.15, 0.15, 0.15]  # Uniform scaling factor for all objects.
 
 LIGHT_CONFIG:
-  light_type: distant  # Type of light, "distant" for sunlight-like behavior.
   min_color: [0.5, 0.5, 0.5]  # Minimum RGB color for light (gray).
   max_color: [0.9, 0.9, 0.9]  # Maximum RGB color for light (almost white).
   min_distant_intensity: 500.0   # Minimum intensity for distant light.
@@ -62,11 +61,11 @@ SDG_CAMERA:
   width: 640  # Camera resolution width in pixels.
   height: 480  # Camera resolution height in pixels.
   name: sdg_camera  # Name for the camera object.
-  pos: [0.0, 0.0, 5.0]  # Camera XYZ position in world coordinates.
+  pos: [0.0, 0.0, 4.45]  # Camera XYZ position in world coordinates.
   rot: [0.0, -90.0, 0.0]  # Camera rotation (Euler angles).
-  focal_length: 2.1  # Focal length of the camera lens.
-  focus_distance: 5.5  # Distance at which the camera is focused.
-  f_stop: 200  # Aperture size, affecting depth of field.
+  focal_length: 2.8  # Focal length of the camera lens.
+  focus_distance: 5.0  # Distance at which the camera is focused.
+  f_stop: 140  # Aperture size, affecting depth of field.
   horizontal_aperture: 5.856  # Horizontal size of the camera's sensor.
   vertical_aperture: 3.276  # Vertical size of the camera's sensor.
   clipping_range: [0.01, 10000000]   # Near and far clipping planes for rendering.
