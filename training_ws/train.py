@@ -221,7 +221,7 @@ def create_model(num_classes):
 # Constants
 NUM_EPOCHS = 5
 TRAINING_PARTITION_RATIO = 0.7
-OPTIMIZER_LR = 0.001
+OPTIMIZER_LR = 0.00001
 
 
 def main():
