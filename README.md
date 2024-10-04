@@ -112,6 +112,8 @@ The following .gif video shows pictures where the ground plane conditions color 
 
 And once it finishes (note the scene does not evolve anymore) check the generated folder under `isaac_ws/datasets/YYYYMMDDHHMMSS_out_fruit_sdg` where `YYYYMMDDHHMMSS` is the stamp of the dataset creation.
 
+Typically 300 images are not enough. For a quick iteration it is recommended to go with 300 images to validate everything works as expected. When running the system for training a model more seriously you can go up to five thousands and spend between 15 and 20 minutes in doing so. You can quickly change the number of images to generate by editing `./isaac_ws/simulation_ws/conf/config.yml` and look for the `NUM_FRAMES` item.
+
 ## Training the model
 
 To train a model you need a NVidia Omniverse synthetic dataset built in the previous step. You first need to set up the following environment variable:
