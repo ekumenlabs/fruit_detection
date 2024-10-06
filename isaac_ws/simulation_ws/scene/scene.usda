@@ -145,7 +145,7 @@ def Xform "World"
     {
         quatf xformOp:orient = (1, 0, 0, 0)
         float3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:scale:unitsResolve = (0.02, 0.02, 0.02)
+        double3 xformOp:scale:unitsResolve = (0.015, 0.015, 0.015)
         double3 xformOp:translate = (-0.1, -0.05, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:scale:unitsResolve"]
     }
@@ -156,7 +156,7 @@ def Xform "World"
     {
         quatf xformOp:orient = (1, 0, 0, 0)
         float3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:scale:unitsResolve = (0.02, 0.02, 0.02)
+        double3 xformOp:scale:unitsResolve = (0.015, 0.015, 0.015)
         double3 xformOp:translate = (0, 0.1, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:scale:unitsResolve"]
     }
@@ -167,7 +167,7 @@ def Xform "World"
     {
         quatf xformOp:orient = (1, 0, 0, 0)
         float3 xformOp:scale = (1, 1, 1)
-        double3 xformOp:scale:unitsResolve = (0.02, 0.02, 0.02)
+        double3 xformOp:scale:unitsResolve = (0.015, 0.015, 0.015)
         double3 xformOp:translate = (0.1, -0.05, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale", "xformOp:scale:unitsResolve"]
     }
@@ -384,14 +384,14 @@ def Xform "Environment"
     )
     {
         float inputs:angle = 1
-        float inputs:intensity = 3000
+        float inputs:intensity = 2000
         float inputs:shaping:cone:angle = 180
         float inputs:shaping:cone:softness
         float inputs:shaping:focus
         color3f inputs:shaping:focusTint
         asset inputs:shaping:ies:file
         token visibility = "inherited"
-        quatd xformOp:orient = (0.6532814824381883, 0.2705980500730985, 0.27059805007309845, 0.6532814824381882)
+        quatd xformOp:orient = (0.7071068, 0.0, 0.0, 0.7071068)
         double3 xformOp:scale = (1, 1, 1)
         double3 xformOp:translate = (0, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
