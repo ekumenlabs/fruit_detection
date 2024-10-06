@@ -100,8 +100,9 @@ class FruitDetectionNode(Node):
         )
         self.declare_parameter("bbox_min_x", 60)
         self.declare_parameter("bbox_min_y", 60)
+        self.declare_parameter("bbox_max_x", 200)
+        self.declare_parameter("bbox_max_y", 200)
         self.declare_parameter("score_threshold", 0.9)
-
         self.add_on_set_parameters_callback(self.validate_parameters)
 
         self.__model_path = (
@@ -154,11 +155,16 @@ class FruitDetectionNode(Node):
         """
         Validate parameter changes.
 
-        :param params: list of parameters.
+        Args:
+        -----
+            params (list[Parameter]): list of parameters to analyze.
 
-        :return: SetParametersResult.
+        Returns:
+        --------
+            SetParametersResult with the result of the analysis
         """
-        parameters_are_valid = True
+        is_valid = True
+        reason = ""
         for param in params:
             if param.name == "bbox_min_x":
                 if param.type_ != Parameter.Type.INTEGER or not (
@@ -166,25 +172,76 @@ class FruitDetectionNode(Node):
                     <= param.value
                     <= FruitDetectionNode.MAXIMUM_BBOX_SIZE_X
                 ):
-                    parameters_are_valid = False
+                    is_valid = False
+                    reason = (
+                        "bbox_min_x: is not in range ["
+                        f"{FruitDetectionNode.MINIMUM_BBOX_SIZE_X}; "
+                        f"{FruitDetectionNode.MAXIMUM_BBOX_SIZE_X}]"
+                    )
                     break
+                else:
+                    reason = "bbox_min_x successfully set."
             elif param.name == "bbox_min_y":
                 if param.type_ != Parameter.Type.INTEGER or not (
                     FruitDetectionNode.MINIMUM_BBOX_SIZE_Y
                     <= param.value
                     <= FruitDetectionNode.MAXIMUM_BBOX_SIZE_Y
                 ):
-                    parameters_are_valid = False
+                    is_valid = False
+                    reason = (
+                        "bbox_min_y: is not in range ["
+                        f"{FruitDetectionNode.MINIMUM_BBOX_SIZE_Y}; "
+                        f"{FruitDetectionNode.MAXIMUM_BBOX_SIZE_Y}]"
+                    )
                     break
+                else:
+                    reason = "bbox_min_y successfully set."
+            if param.name == "bbox_max_x":
+                if param.type_ != Parameter.Type.INTEGER or not (
+                    FruitDetectionNode.MINIMUM_BBOX_SIZE_X
+                    <= param.value
+                    <= FruitDetectionNode.MAXIMUM_BBOX_SIZE_X
+                ):
+                    is_valid = False
+                    reason = (
+                        "bbox_max_x: is not in range ["
+                        f"{FruitDetectionNode.MINIMUM_BBOX_SIZE_X}; "
+                        f"{FruitDetectionNode.MAXIMUM_BBOX_SIZE_X}]"
+                    )
+                    break
+                else:
+                    reason = "bbox_max_x successfully set."
+            elif param.name == "bbox_max_y":
+                if param.type_ != Parameter.Type.INTEGER or not (
+                    FruitDetectionNode.MINIMUM_BBOX_SIZE_Y
+                    <= param.value
+                    <= FruitDetectionNode.MAXIMUM_BBOX_SIZE_Y
+                ):
+                    is_valid = False
+                    reason = (
+                        "bbox_max_y: is not in range ["
+                        f"{FruitDetectionNode.MINIMUM_BBOX_SIZE_Y}; "
+                        f"{FruitDetectionNode.MAXIMUM_BBOX_SIZE_Y}]"
+                    )
+                    break
+                else:
+                    reason = "bbox_max_y successfully set."
             elif param.name == "score_threshold":
                 if param.type_ != Parameter.Type.DOUBLE or not (
                     FruitDetectionNode.MINIMUM_SCORE_THRESHOLD
                     <= param.value
                     <= FruitDetectionNode.MAXIMUM_SCORE_THRESHOLD
                 ):
-                    parameters_are_valid = False
+                    is_valid = False
+                    reason = (
+                        "score_threshold: is not in range ["
+                        f"{FruitDetectionNode.MINIMUM_SCORE_THRESHOLD}; "
+                        f"{FruitDetectionNode.MAXIMUM_SCORE_THRESHOLD}]"
+                    )
                     break
-        return SetParametersResult(successful=parameters_are_valid)
+        if not is_valid:
+            self.get_logger().warn(f"Skipping to set parameter: {reason}")
+        return SetParametersResult(successful=is_valid, reason=reason)
 
     def load_model(self):
         """Load the torch model."""
@@ -212,18 +269,26 @@ class FruitDetectionNode(Node):
         """Prepare cv2 image for inference."""
         return self.image_to_tensor(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
 
-    def bbox_has_minimum_size(self, box, min_x, min_y):
+    def bbox_is_in_range(self, box, min_x, min_y, max_x, max_y):
         """
-        Check if a box is bigger than a minimum size.
+        Check if a box is within size.
 
-        :param box: bounding box from inference.
-        :param min_x: minimum horizontal length of the bounding box.
-        :param min_y: minimum vertical length of the bounding box.
+        Args:
+        -----
+            box (tuple[int, int, int, int]): bounding box from inference.
+            min_x (int): minimum horizontal length of the bounding box.
+            min_y (int): minimum vertical length of the bounding box.
+            max_x (int): maximum horizontal length of the bounding box.
+            max_y (int): maximum vertical length of the bounding box.
 
-        :return: True if the box has the minimum size.
+        Returns:
+        --------
+            bool True if the box size is in range.
         """
         x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
-        return (min_x <= (x2 - x1)) and (min_y <= (y2 - y1))
+        dx = x2 - x1
+        dy = y2 - y1
+        return (min_x <= dx <= max_x) and (min_y <= dy <= max_y)
 
     def score_frame(self, frame):
         """
@@ -255,13 +320,23 @@ class FruitDetectionNode(Node):
                     .get_parameter_value()
                     .integer_value  # Minimum bbox y size
                 )
+                bbox_max_x = (
+                    self.get_parameter("bbox_max_x")
+                    .get_parameter_value()
+                    .integer_value  # Maximum bbox x size
+                )
+                bbox_max_y = (
+                    self.get_parameter("bbox_max_y")
+                    .get_parameter_value()
+                    .integer_value  # Maximum bbox y size
+                )
                 score_threshold = (
                     self.get_parameter("score_threshold")
                     .get_parameter_value()
                     .double_value  # Score threshold
                 )
-                if score >= score_threshold and self.bbox_has_minimum_size(
-                    box, bbox_min_x, bbox_min_y
+                if score >= score_threshold and self.bbox_is_in_range(
+                    box, bbox_min_x, bbox_min_y, bbox_max_x, bbox_max_y
                 ):
                     results.append(
                         {

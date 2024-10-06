@@ -210,11 +210,14 @@ docker compose -f docker/docker-compose.yml --profile simulated_pipeline down
 
 ### Parameter tuning
 
-The following detection node parameters are exposed and can be modified via rqt_gui when running any pipeline:
+The following detection node parameters are exposed and can be modified via rqt_gui when running any pipeline. Please note that values set outside of their range will simply be discarded.
 
-#### Minimum bounding box
 
-The two parameters `bbox_min_x` and `bbox_min_y` are both measured in pixels. `bbox_min_x` can take values between 0 and 640, and `bbox_min_y` can take values between 0 and 480. They can be used to filter the inferences based on the size of the bounding boxes generated.
+![Parameter tunning](./doc/parameter_tunning.png)
+
+#### Bounding box
+
+The parameters `bbox_min_x`, `bbox_min_y`, `bbox_max_x`, `bbox_max_y` are measured in pixels. `bbox_min_x` and `bbox_max_x` can take values between 0 and 640. `bbox_min_y` and `bbox_max_y` can take values between 0 and 480. They can be used to filter the inferences based on the size of the bounding boxes generated.
 
 #### Score threshold
 
@@ -293,3 +296,7 @@ We faced some situations in which precedence of access to the GPU yields to race
 - Close all Google Chrome related processes.
 - Try to open the simulator using one of the provided instructions in the readme.
 - Verify that you can open the simulator, otherwise, perhaps you need to reboot your system :/ and try again.
+
+4. Detection calibration
+
+You may need to further calibrate the detection node post-training. This is usually done considering the ambient conditions. We offer two parameters via dynamic reconfigure to be used. Refer to the "Parameter tuning" section for further details.
