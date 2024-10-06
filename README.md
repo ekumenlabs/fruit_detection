@@ -208,6 +208,8 @@ docker compose -f docker/docker-compose.yml --profile simulated_pipeline up
 docker compose -f docker/docker-compose.yml --profile simulated_pipeline down
 ```
 
+![Simulated pipeline](./doc/simulated_pipeline.gif)
+
 ### Parameter tuning
 
 The following detection node parameters are exposed and can be modified via rqt_gui when running any pipeline. Please note that values set outside of their range will simply be discarded.
