@@ -1,5 +1,13 @@
 # Fruit detection
 
+This repository contains the code of a case study where we have combined multiple technologies to study the how we can leverage NVidia Omniverse, ROS 2, PyTorch and the great olixVision™ Camera to simulate and run a system that detects fruit. There are multiple applications for a system like this, ranging from agriculture to industrial automation application. This project aims to study how the simulation and systhetic data generation process can be used to model the camera sensor, generate datasets for ML model training and evaluation and then integrate it into a system that is functional.
+
+The setup built for this system can be seen in the following picture:
+
+<img src="./doc/hardware_setup.png" alt="Hardware setup" width="720"/>
+
+Connected to the camera, a Lenovo Legion Pro 7i 16, with an Intel® Core™ i9-14900HX, 32GB of RAM, 2TB of disk, NVidia GeForce RTX 4090 GPU, is connected and has been used for development. Requirements for running are less than for development and training.
+
 # Requisites
 
 - [Docker](https://docs.docker.com/engine/install/ubuntu/)
@@ -31,9 +39,43 @@ pre-commit run --all-files
 
 # Documentation
 
+
+## Olive™ camera
+
+Please, consider visiting [Olive Robotics web page](https://olive-robotics.com/) to learn more about their portfolio. In particular, you can refer to the [olixVision™ Camera](https://olive-robotics.com/?page_id=613) for further details and the specifications of the camera.
+
+The olixVision™ Camera provides a ROS 2 native interface which allows to quickly integrate it to any ROS 2 enabled application. The necessary steps to connect to it are described in the [documentation page](https://olive-robotics.com/?page_id=592). Navigate through the Hardware > Camera menu titles to access all the details about it. For a quick setup, we recommend following these steps:
+
+1. Connect the USB cable to the camera
+
+<img src="./doc/usb_camera.jpeg" alt="USB connection to the camera" width="720"/>
+
+2. Connect the USB cable to your computer
+
+<img src="./doc/usb_computer.jpeg" alt="USB connection to the computer" width="720"/>
+
+3. Configure the network interface
+
+The camera will create an Ethernet over USB driver. It comes with a static IP configured, which it is 192.168.7.2 in our case, and then one needs to validate the new network interface appears in the network manager and configure the computer interface accordingly. For us, that is:
+
+- IP: 192.168.7.100
+- Netmask: 255.255.255.0
+- Gateway: N/A
+- Static IP configuration
+
+<img src="./doc/network_configuration.png" alt="Networkd configuration" width="720"/>
+
+4. Verify you can access the web dashboard
+
+Head to your favourite browser and type the IP of the camera in the URL. You should be able to see the camera is up when it displays a dashboard similar to the following:
+
+<img src="./doc/olive_dashboard.png" alt="Olive dashboard" width="720"/>
+
+Please look into the oficial documentation to learn more about other ways in you can use the camera.
+
 ## Architecture
 
-Within the docker directory you'll find a docker compose file, the dockerfiles for each image and some custom configuration files.
+Within the docker directory you will find a docker compose file, the dockerfiles for each image and some custom configuration files.
 The system relies on using profiles to select which set of services build and run depending on the workflow. The following sections explain how to deal with them.
 
 ## Profiles
