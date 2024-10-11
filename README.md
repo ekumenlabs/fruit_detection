@@ -212,6 +212,8 @@ docker compose -f docker/docker-compose.yml --profile olive_pipeline up
 docker compose -f docker/docker-compose.yml --profile olive_pipeline down
 ```
 
+![Olive pipeline](./doc/olive_pipeline.gif)
+
 ### Running webcam_pipeline
 
 To load the system with a webcam, detection and the visualization in RQt, you can do the following:
