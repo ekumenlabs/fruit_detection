@@ -4,13 +4,13 @@
 
 - [Docker](https://docs.docker.com/engine/install/ubuntu/)
 - Ubuntu 20.04 / 22.04
-- NVidia GPU GeForce RTX 3070 or higher.
-- [NVidia GPU Driver](https://www.nvidia.com/en-us/drivers/unix/)
-- [NVidia Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit)
-- [Omniverse-launcher](https://www.nvidia.com/en-us/omniverse/download/)
-- [Nucleus](https://docs.omniverse.nvidia.com/nucleus/latest/workstation/installation.html)
+- NVIDIA GPU GeForce RTX 3070 or higher.
+- [NVIDIA GPU Driver](https://www.NVIDIA.com/en-us/drivers/unix/)
+- [NVIDIA Container Toolkit](https://github.com/NVIDIA/nvidia-container-toolkit)
+- [NVIDIA Omniverse™ Launcher](https://www.nvidia.com/en-us/omniverse/download/)
+- [NVIDIA Omniverse™ Nucleus](https://docs.omniverse.nvidia.com/nucleus/latest/workstation/installation.html)
 
-We recommend reading this [article](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_container.html) from NVidia Omniverse which explains the basic configuration.
+We recommend reading this [article](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_container.html) from NVIDIA Omniverse™ which explains the basic configuration.
 
 > **NOTE:** this project is disk savvy, make sure to have tens of GBs (~50GB) available of free disk space.
 
@@ -44,8 +44,8 @@ The available profiles are:
 - `detection`: loads the detection stack.
 - `visualization`: loads RQt to visualize the input and output image processing.
 - `webcam`: loads the usb_cam driver that makes a connected webcam to publish. Useful when the Olive Camera is not available.
-- `simulation`: loads the simulation NVidia Isaac Omniverse.
-- `dataset_gen`: generates a training dataset using NVidia Isaac Omniverse.
+- `simulation`: loads the simulation NVIDIA Omniverse™.
+- `dataset_gen`: generates a training dataset using NVIDIA Omniverse™.
 
 Compound profiles are:
 
@@ -71,9 +71,9 @@ graph TD
 
 ```mermaid
 graph TD
-    A[NVidia Omniverse] --> B[Fruit Detection Node]
+    A[NVIDIA Omniverse™] --> B[Fruit Detection Node]
     B[Fruit Detection Node] --> C[RQt Visualization]
-    A[NVidia Omniverse] --> C[RQt Visualization]
+    A[NVIDIA Omniverse™] --> C[RQt Visualization]
 ```
 
 Testing profiles are:
@@ -116,7 +116,7 @@ Typically 300 images are not enough. For a quick iteration it is recommended to 
 
 ## Training the model
 
-To train a model you need a NVidia Omniverse synthetic dataset built in the previous step. You first need to set up the following environment variable:
+To train a model you need a NVIDIA Omniverse™ synthetic dataset built in the previous step. You first need to set up the following environment variable:
 
 ```bash
 export DATASET_NAME=YYYYMMDDHHMMSS_out_fruit_sdg
@@ -299,7 +299,7 @@ Your good old friend `docker system prune` and the more agressive `docker system
 xhost +si:localuser:root
 ```
 
-3. Running the NVidia Omniverse together with Google Chrome yields errors when opening the simulator. What do I do?
+3. Running the NVIDIA Omniverse™ together with Google Chrome yields errors when opening the simulator. What do I do?
 
 We faced some situations in which precedence of access to the GPU yields to race conditions between these two programs. One possible solution is to do the following:
 
