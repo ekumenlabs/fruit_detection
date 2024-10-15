@@ -190,6 +190,14 @@ docker compose -f docker/docker-compose.yml --profile webcam_pipeline up
 docker compose -f docker/docker-compose.yml --profile webcam_pipeline down
 ```
 
+**NOTE:** In case the default configuration is not appropriate for you hardware setup, please review the documentation of the [usb_cam](https://github.com/ros-drivers/usb_cam/blob/0.8.1/README.md) package.
+In particular, it is typical to find setups with multiple video devices, and to pick the one you want, you need to explicitly configure it in [camera_params.yml](./docker/camera_params.yml). Here you can find a reference [configuration file](https://github.com/ros-drivers/usb_cam/blob/0.8.1/config/params_1.yaml).
+To make sure your changes are effective, build the camera profile before running it again:
+
+```bash
+docker compose -f docker/docker-compose.yml --profile webcam build
+```
+
 ### Running simulated_pipeline
 
 To load the system with the simulation, detection and the visualization in RQt, you can do the following:
