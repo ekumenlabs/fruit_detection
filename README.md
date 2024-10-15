@@ -1,12 +1,12 @@
 # Fruit detection
 
-This repository contains the code of a case study where we have combined multiple technologies to study the how we can leverage NVidia Omniverse, ROS 2, PyTorch and the great olixVision™ Camera to simulate and run a system that detects fruit. There are multiple applications for a system like this, ranging from agriculture to industrial automation application. This project aims to study how the simulation and systhetic data generation process can be used to model the camera sensor, generate datasets for ML model training and evaluation and then integrate it into a system that is functional.
+This repository contains the code of a case study where we have combined multiple technologies to study the how we can leverage NVidia Omniverse™, ROS 2, PyTorch and the great olixVision™ Camera to simulate and run a system that detects fruit. There are multiple applications for a system like this, ranging from agriculture to industrial automation applications. This case study shows how the simulation and systhetic data generation processes can be used to model a camera sensor, generate datasets for ML model training and evaluation as well as the real life integration into a real and functional system.
 
 The setup built for this system can be seen in the following picture:
 
 <img src="./doc/hardware_setup.png" alt="Hardware setup" width="720"/>
 
-Connected to the camera, a Lenovo Legion Pro 7i 16, with an Intel® Core™ i9-14900HX, 32GB of RAM, 2TB of disk, NVidia GeForce RTX 4090 GPU, is connected and has been used for development. Requirements for running are less than for development and training.
+Connected to the camera, there is a Lenovo Legion Pro 7i 16, with an Intel® Core™ i9-14900HX, 32GB of RAM, 2TB of disk, NVidia GeForce RTX 4090 GPU, which was used for development. Requirements for running the system are less than for development and training. See the following sections for more information.
 
 # Requisites
 
