@@ -40,7 +40,7 @@ pre-commit run --all-files
 # Documentation
 
 
-## Olive™ camera
+## olixVision™ Camera by Olive Robotics
 
 Please, consider visiting [Olive Robotics web page](https://olive-robotics.com/) to learn more about their portfolio. In particular, you can refer to the [olixVision™ Camera](https://olive-robotics.com/?page_id=613) for further details and the specifications of the camera.
 
@@ -85,19 +85,19 @@ The available profiles are:
 - `training`: trains a fasterrcnn_resnet50_fpn model based on a synthetic dataset.
 - `detection`: loads the detection stack.
 - `visualization`: loads RQt to visualize the input and output image processing.
-- `webcam`: loads the usb_cam driver that makes a connected webcam to publish. Useful when the Olive Camera is not available.
+- `webcam`: loads the usb_cam driver that makes a connected webcam to publish. Useful when the olixVision™ Camera is not available.
 - `simulation`: loads the simulation NVIDIA Omniverse™.
 - `dataset_gen`: generates a training dataset using NVIDIA Omniverse™.
 
 Compound profiles are:
 
-- `olive_pipeline`: loads `visualization` and `detection`, expects the Olive Camera to be connected.
+- `olive_pipeline`: loads `visualization` and `detection`, expects the olixVision™ Camera to be connected.
 
 ```mermaid
 graph TD
-    A[Olive Camera] --> B[Fruit Detection Node]
+    A[olixVision™ Camera] --> B[Fruit Detection Node]
     B[Fruit Detection Node] --> C[RQt Visualization]
-    A[Olive Camera] --> C[RQt Visualization]
+    A[olixVision™ Camera] --> C[RQt Visualization]
 ```
 
 - `webcam_pipeline`: loads `webcam`,`visualization` and `detection`.
@@ -194,7 +194,7 @@ To run the system you need to define which profile(s) to run. You can pile profi
 
 ### Running olive_pipeline
 
-To load the system with the Olive Camera, detection and the visualization in RQt, you can do the following:
+To load the system with the olixVision™ Camera, detection and the visualization in RQt, you can do the following:
 
 1. Connect the camera to the USB port of your computer.
 
@@ -212,7 +212,7 @@ docker compose -f docker/docker-compose.yml --profile olive_pipeline up
 docker compose -f docker/docker-compose.yml --profile olive_pipeline down
 ```
 
-![Olive pipeline](./doc/olive_pipeline.gif)
+![olixVision™ Camera](./doc/olive_pipeline.gif)
 
 ### Running webcam_pipeline
 
@@ -300,7 +300,7 @@ docker exec -it rosbag bash
 source /opt/ros/humble/setup.bash
 ```
 
-4. With a running system (see any of the aforementioned run ways), record the Olive Camera:
+4. With a running system (see any of the aforementioned run ways), record the olixVision™ Camera:
 
 ```bash
 ros2 bag record -s mcap -o my_rosbag /olive/camera/id01/image/compressed
